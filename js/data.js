@@ -1,8 +1,8 @@
-// Mock data for the Sleep-Safe Root Volume Clip prototype.
+// Mock data for the DreamLift Root Volume Clip prototype.
 // All copy, numbers and options live here. No functions, no logic.
 window.MOCK = {
   product: {
-    name: "Sleep-Safe Root Volume Clip",
+    name: "DreamLift Root Volume Clip",
     pitch: "A satin-tipped root clip you can sleep in, so you wake up with lifted roots instead of reaching for a hot tool.",
     problem: "If you wash your hair at night, your roots go flat while you sleep. A regular claw clip hurts to sleep in and pulls at the roots, so most mornings end with re-wetting or heat. Nothing made for lifting roots is safe to sleep in."
   },

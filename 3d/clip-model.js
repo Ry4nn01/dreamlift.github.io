@@ -1,4 +1,4 @@
-// Geometry for the Sleep-Safe Root Volume Clip 3D prototype.
+// Geometry for the DreamLift Root Volume Clip 3D prototype.
 // One source for both the viewer (clip-3d.html) and the printable STL files.
 // Plain script, no libraries: works from file:// and in the jsc command-line shell.
 //
