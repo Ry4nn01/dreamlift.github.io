@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Root Clip 3D Prototype</title>
+  <script>
+    // ?embed=1: shown inside the app's Home page; only the viewer and its controls.
+    if (/[?&]embed\b/.test(location.search)) document.documentElement.classList.add("embed");
+  </script>
+  <style>
+    :root {
+      --bg: #fbf8f7; --surface: #ffffff; --surface-2: #f4eeec;
+      --ink: #2a2326; --ink-soft: #5e5458; --line: #e4dadb;
+      --line-strong: color-mix(in srgb, var(--ink-soft) 55%, var(--line));
+      --accent: #9a3f5c; --accent-ink: #ffffff; --accent-soft: #f6e4ea;
+      --focus: #2f6fd6;
+      --stage-top: #fbf6f4; --stage-bottom: #e9dfdc;
+      --banner-bg: #fff4d6; --banner-ink: #5c4300; --banner-line: #ecd48f;
+      --radius: 12px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1618; --surface: #241f22; --surface-2: #2d272a;
+        --ink: #f1eaec; --ink-soft: #bfb3b8; --line: #3d3539;
+        --accent: #e7a1b8; --accent-ink: #2a1019; --accent-soft: #3a2730;
+        --focus: #8ab4ff;
+        --stage-top: #2c2629; --stage-bottom: #171315;
+        --banner-bg: #3a3017; --banner-ink: #f5dc9a; --banner-line: #5e4e22;
+      }
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font: 16px/1.5 var(--font); overflow-wrap: break-word;
+    }
+    .note-bar {
+      background: var(--banner-bg); color: var(--banner-ink);
+      border-bottom: 1px solid var(--banner-line);
+      padding: 8px 16px; font-size: 0.875rem; text-align: center;
+    }
+    main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 48px; }
+    h1 { font-size: 1.6rem; line-height: 1.2; margin: 0 0 4px; }
+    .lede { margin: 0 0 16px; color: var(--ink-soft); }
+    .layout { display: grid; gap: 16px; }
+    @media (min-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; } }
+
+    .stage {
+      position: relative; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+      background: radial-gradient(120% 90% at 50% 25%, var(--stage-top), var(--stage-bottom));
+      touch-action: none;
+    }
+    .stage canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; cursor: grab; }
+    .stage canvas.grabbing { cursor: grabbing; }
+    .stage canvas.on-knob { cursor: ew-resize; }
+    .stage-hint {
+      position: absolute; left: 12px; right: 112px; bottom: 10px; margin: 0;
+      font-size: 0.8rem; line-height: 1.3; color: var(--ink-soft); pointer-events: none;
+    }
+    .zoom { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 6px; }
+    .zoom button {
+      width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--line-strong);
+      background: var(--surface); color: var(--ink); font-size: 1.25rem; cursor: pointer;
+    }
+    .stage-label {
+      position: absolute; top: 10px; left: 12px; right: 12px; margin: 0;
+      font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); pointer-events: none;
+    }
+    .no-gl { padding: 40px 20px; text-align: center; color: var(--ink-soft); }
+    /* On phones, keep the text off the model: label above it, hint below it. */
+    @media (max-width: 600px) {
+      .stage-label { position: static; padding: 10px 12px 0; }
+      .stage-hint { position: static; padding: 6px 112px 14px 12px; min-height: 64px; }
+    }
+
+    .panel { display: grid; gap: 14px; }
+    fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+    legend { font-weight: 600; font-size: 0.95rem; margin-bottom: 6px; padding: 0; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+    .seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .seg label {
+      display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 14px;
+      border: 1.5px solid var(--line-strong); border-radius: 999px;
+      background: var(--surface); cursor: pointer; font-size: 0.95rem;
+    }
+    .seg input:checked + label { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .seg input:focus-visible + label { outline: 3px solid var(--focus); outline-offset: 2px; }
+    .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.25); flex: none; }
+    .hint { margin: 6px 0 0; font-size: 0.85rem; color: var(--ink-soft); }
+
+    .btn {
+      min-height: 44px; padding: 8px 16px; border-radius: 999px; cursor: pointer;
+      border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--ink); font: inherit;
+    }
+    .btn:focus-visible, .zoom button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+    .card h2 { font-size: 1.05rem; margin: 0 0 8px; }
+    .parts { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .parts li { display: grid; grid-template-columns: 18px 1fr; gap: 10px; align-items: start; }
+    .swatch { width: 18px; height: 18px; border-radius: 50%; margin-top: 3px; border: 1px solid var(--line-strong); }
+    .parts strong { display: block; }
+    .parts span { display: block; font-size: 0.875rem; color: var(--ink-soft); }
+    .card p, .card ul { margin: 0 0 8px; font-size: 0.9rem; }
+    .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+    .card ul { padding-left: 1.2em; }
+    .sections { display: grid; gap: 16px; margin-top: 16px; }
+    @media (min-width: 860px) { .sections { grid-template-columns: 1fr 1fr; } }
+
+    /* "On a model": the concept illustration (redrawn from our hand sketch) shown in the viewer */
+    .stage-sketch { aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; padding: 40px 8px 8px; }
+    .sketch {
+      --hair: #3a2418; --hair-hi: #7a4b31; --skin: #ecc9ae; --skin-line: #c79878;
+      --clip: #4a2e20; --clip-hi: #7d5440; --rose: #d39a8c; --satin: #e4b7c2;
+      --callout: var(--ink-soft); --label: var(--ink);
+      display: block; width: 100%; height: 100%; max-height: 100%;
+    }
+    @media (max-width: 600px) { .stage-sketch { padding-top: 8px; } }
+
+    /* Embedded in the app's Home page: just the viewer and its controls. */
+    .embed body { background: transparent; }
+    .embed .note-bar, .embed main > h1, .embed .lede, .embed .sections { display: none; }
+    .embed main { padding: 0; max-width: none; }
+    .embed .panel { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px 16px; }
+    .sketch text { font: 600 25px var(--font); fill: var(--label); }
+    .sketch text.sub { font-weight: 400; font-size: 20px; fill: var(--callout); }
+  </style>
+</head>
+<body>
+  <p class="note-bar">Prototype model. All sizes are placeholders until the founder's 3-night test.</p>
+  <main>
+    <h1>Sleep-Safe Root Volume Clip: 3D prototype</h1>
+    <p class="lede">A comb clip with one row of curved, satin-covered prongs in your hair colour. Slide the knob on the front to set the prong spacing for your hair type; it faces forward over the forehead when worn.</p>
+
+    <div class="layout">
+      <div class="stage" id="stage">
+        <p class="stage-label" id="stage-label">Clip</p>
+        <canvas id="view" width="800" height="600" role="img" aria-label="3D model of the root clip"></canvas>
+        <div class="stage-sketch" id="stage-sketch" hidden>
+          <svg class="sketch" id="sketch" viewBox="0 0 960 520" role="img"
+               aria-label="Illustration: a woman's head from the front with curly hair down. The front section of hair goes back through a comb clip at the top front of her head. The clip has a rose-gold slider on the front and satin-tipped prongs."></svg>
+        </div>
+        <p class="stage-hint" id="stage-hint">Drag to turn it any way · drag the rose-gold knob to change the spacing · scroll or + / − to zoom</p>
+        <div class="zoom">
+          <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+          <button type="button" id="zoom-out" aria-label="Zoom out">−</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <fieldset>
+          <legend>Show</legend>
+          <div class="seg">
+            <input type="radio" name="view" id="view-clip" value="clip" checked><label for="view-clip">Clip</label>
+            <input type="radio" name="view" id="view-apart" value="apart"><label for="view-apart">Parts apart</label>
+            <input type="radio" name="view" id="view-head" value="head"><label for="view-head">On a model</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Colour (to blend into your hair)</legend>
+          <div class="seg" id="colours"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Spacing slider</legend>
+          <div class="seg">
+            <input type="radio" name="spacing" id="sp-narrow" value="narrow"><label for="sp-narrow">Narrow</label>
+            <input type="radio" name="spacing" id="sp-medium" value="medium" checked><label for="sp-medium">Medium</label>
+            <input type="radio" name="spacing" id="sp-wide" value="wide"><label for="sp-wide">Wide</label>
+          </div>
+          <p class="hint">Or drag the knob on the clip itself. Straight or fine hair: narrower. Curly or thick hair: wider.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Satin glove</legend>
+          <div class="seg">
+            <input type="radio" name="satin" id="satin-on" value="on" checked><label for="satin-on">On (night)</label>
+            <input type="radio" name="satin" id="satin-off" value="off"><label for="satin-off">Off (daytime)</label>
+          </div>
+          <p class="hint">Watch it slide off the prongs in one piece, like taking off a glove.</p>
+        </fieldset>
+
+        <div class="row">
+          <button type="button" class="btn" id="spin" aria-pressed="false">Spin 360°</button>
+          <button type="button" class="btn" id="reset">Reset view</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sections">
+      <section class="card">
+        <h2>The five parts</h2>
+        <ul class="parts" id="parts"></ul>
+      </section>
+
+      <section class="card">
+        <h2>Printable files</h2>
+        <p>PLA parts for the physical prototype, in millimetres, medium spacing. Each is also in the <code>print</code> folder.</p>
+        <div class="row" id="downloads"></div>
+        <p class="hint">Bought, not printed: the small steel spring that sits inside the body behind the slider. The satin glove (seven sleeves joined by a band at the top) is sewn to fit and slid on after printing.</p>
+      </section>
+
+      <section class="card">
+        <h2>What this model shows</h2>
+        <ul>
+          <li>A comb clip with one row of 7 tapered prongs and a softly rounded body that curves gently along its length to follow the head.</li>
+          <li>Colours to blend into hair: brown, black, red and blonde.</li>
+          <li>The prongs curve back to follow the head, so the clip grips and stays on.</li>
+          <li>Worn at the front of the head, just behind the hairline, with the slider facing forward. "On a model" shows it on a head of curly hair, with curls running back between the prongs.</li>
+          <li>The slider knob moves along its track and spreads or closes the prongs for different hair types.</li>
+          <li>Each prong is covered in satin from the body to the tip. The satin is one piece, like a glove: a band under the body joins all seven sleeves, so a single sleeve can't get lost, and it slides off in one go for daytime use and washing.</li>
+          <li>A light steel spring inside the body, behind the slider, so it grips without clamping. It can't be seen from outside; "Parts apart" shows it.</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Not decided yet</h2>
+        <ul>
+          <li>Real sizes: these are typical comb-clip sizes (about 8 cm wide, prongs about 4 cm long).</li>
+          <li>How the slider moves the prongs inside the body: shown here as a concept only. The printed comb has fixed prongs at medium spacing, and the printed body is solid, with no pocket for the spring.</li>
+          <li>How the satin glove attaches and how it stretches when the slider changes the spacing.</li>
+          <li>Spring tension: to be tuned in the founder's test nights.</li>
+          <li>The model is a mannequin head with curls built in 3D, to show the look, not a real person.</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <script src="clip-model.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var M = window.ClipModel;
+    var canvas = document.getElementById("view");
+    var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+
+    // ---- colours (sRGB) ------------------------------------------------------
+    var COLOURS = {
+      brown: { label: "Brown", hex: "#5b3a27" },
+      black: { label: "Black", hex: "#211b1d" },
+      red: { label: "Red", hex: "#8e3b20" },
+      blonde: { label: "Blonde", hex: "#cfa86c" }
+    };
+    var SATIN = "#e4b7c2", ROSE_GOLD = "#d39a8c", STEEL = "#c3c8cf", SKIN = "#e8c3a8", STAND = "#2c2629";
+    function hexRgb(h) { return [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255]; }
+    function shade(rgb, k) { return [rgb[0] * k, rgb[1] * k, rgb[2] * k]; }
+
+    // ---- state ------------------------------------------------------------
+    var state = { view: "clip", spacing: 0.5, satin: true, colour: "brown" };
+    var anim = { apart: 0, satin: 1, spacing: 0.5 }; // animated toward the state
+
+    // ---- quaternion camera: turn the clip any way, all the way round --------
+    function qMul(a, b) {
+      return [
+        a[0] * b[0] - a[1] * b[1] - a[2] * b[2] - a[3] * b[3],
+        a[0] * b[1] + a[1] * b[0] + a[2] * b[3] - a[3] * b[2],
+        a[0] * b[2] - a[1] * b[3] + a[2] * b[0] + a[3] * b[1],
+        a[0] * b[3] + a[1] * b[2] - a[2] * b[1] + a[3] * b[0]
+      ];
+    }
+    function qAxis(ax, ay, az, angle) { var s = Math.sin(angle / 2); return [Math.cos(angle / 2), ax * s, ay * s, az * s]; }
+    function qNorm(q) { var l = Math.hypot(q[0], q[1], q[2], q[3]) || 1; return [q[0] / l, q[1] / l, q[2] / l, q[3] / l]; }
+    function qFromYawPitch(yaw, pitch) { return qMul(qAxis(1, 0, 0, pitch), qAxis(0, 1, 0, -yaw)); }
+    function qSlerp(a, b, t) {
+      var d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+      if (d < 0) { b = [-b[0], -b[1], -b[2], -b[3]]; d = -d; }
+      if (d > 0.9995) return qNorm([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t, a[3] + (b[3] - a[3]) * t]);
+      var th = Math.acos(d), s = Math.sin(th), wa = Math.sin((1 - t) * th) / s, wb = Math.sin(t * th) / s;
+      return [a[0] * wa + b[0] * wb, a[1] * wa + b[1] * wb, a[2] * wa + b[2] * wb, a[3] * wa + b[3] * wb];
+    }
+    function qMatrix(q) {
+      var w = q[0], x = q[1], y = q[2], z = q[3];
+      return [
+        [1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
+        [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)],
+        [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)]
+      ];
+    }
+
+    var VIEWS = {
+      clip: { target: [0, -1.8, -0.2], dist: 16, yaw: -0.45, pitch: 0.25, label: "Clip (front, slider side)" },
+      apart: { target: [0, -2.4, 0.4], dist: 22, yaw: -0.6, pitch: 0.3, label: "Parts apart" },
+      head: { target: [0, -3.0, 1.0], dist: 92, yaw: -0.3, pitch: 0.22, label: "On a model: how it's worn (concept sketch)" }
+    };
+    var cam = { q: qFromYawPitch(VIEWS.clip.yaw, VIEWS.clip.pitch), dist: VIEWS.clip.dist, target: VIEWS.clip.target.slice() };
+    var camGoal = null, spinning = false, drag = null;
+
+    // ---- matrices (column-major) ------------------------------------------------
+    function mat4() { return new Float32Array(16); }
+    function mMul(a, b) {
+      var o = mat4();
+      for (var c = 0; c < 4; c++) for (var r = 0; r < 4; r++) {
+        o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+      }
+      return o;
+    }
+    function mTranslate(x, y, z) { var m = mat4(); m[0] = m[5] = m[10] = m[15] = 1; m[12] = x; m[13] = y; m[14] = z; return m; }
+    function mFromAxes(ex, ey, ez, o) {
+      var m = mat4();
+      m[0] = ex[0]; m[1] = ex[1]; m[2] = ex[2];
+      m[4] = ey[0]; m[5] = ey[1]; m[6] = ey[2];
+      m[8] = ez[0]; m[9] = ez[1]; m[10] = ez[2];
+      m[12] = o[0]; m[13] = o[1]; m[14] = o[2]; m[15] = 1;
+      return m;
+    }
+    function mPerspective(fovy, aspect, near, far) {
+      var f = 1 / Math.tan(fovy / 2), m = mat4();
+      m[0] = f / aspect; m[5] = f; m[10] = (far + near) / (near - far); m[11] = -1; m[14] = 2 * far * near / (near - far);
+      return m;
+    }
+    function mApply(m, p) {
+      var x = p[0], y = p[1], z = p[2], w = m[3] * x + m[7] * y + m[11] * z + m[15];
+      return [(m[0] * x + m[4] * y + m[8] * z + m[12]) / w, (m[1] * x + m[5] * y + m[9] * z + m[13]) / w, (m[2] * x + m[6] * y + m[10] * z + m[14]) / w, w];
+    }
+    function viewMatrix() {
+      var R = qMatrix(cam.q), m = mat4();
+      for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) m[j * 4 + i] = R[i][j];
+      m[15] = 1;
+      return mMul(mTranslate(0, 0, -cam.dist), mMul(m, mTranslate(-cam.target[0], -cam.target[1], -cam.target[2])));
+    }
+
+    // ---- WebGL ------------------------------------------------------------------
+    var gl = canvas.getContext("webgl", { antialias: true, alpha: true, premultipliedAlpha: false });
+    if (!gl) {
+      var msg = document.createElement("p");
+      msg.className = "no-gl";
+      msg.textContent = "This browser can't show the 3D model (WebGL is turned off). Try the latest Chrome or Safari.";
+      canvas.replaceWith(msg);
+      return;
+    }
+
+    var VS = [
+      "attribute vec3 aPos; attribute vec3 aNorm; attribute vec3 aTan;",
+      "uniform mat4 uMVP; uniform mat4 uMV;",
+      "varying vec3 vPosC; varying vec3 vNormC; varying vec3 vTanC; varying vec3 vPosM;",
+      "void main() {",
+      "  vPosC = (uMV * vec4(aPos, 1.0)).xyz;",
+      "  vNormC = (uMV * vec4(aNorm, 0.0)).xyz;",
+      "  vTanC = (uMV * vec4(aTan, 0.0)).xyz;",
+      "  vPosM = aPos;",
+      "  gl_Position = uMVP * vec4(aPos, 1.0);",
+      "}"
+    ].join("\n");
+
+    // Materials: 0 glossy plastic, 1 satin, 2 hair, 3 skin, 4 metal, 5 floor shadow, 6 matte.
+    var FS = [
+      "precision mediump float;",
+      "uniform vec3 uColor; uniform float uMode; uniform float uAlpha; uniform vec2 uShadowR;",
+      "varying vec3 vPosC; varying vec3 vNormC; varying vec3 vTanC; varying vec3 vPosM;",
+      "vec3 lin(vec3 c) { return pow(c, vec3(2.2)); }",
+      "float kk(vec3 T, vec3 H, float p) { float th = dot(T, H); return pow(sqrt(max(0.0, 1.0 - th * th)), p); }",
+      "void main() {",
+      "  if (uMode > 4.5 && uMode < 5.5) {",
+      "    float d = length(vPosM.xz / uShadowR);",
+      "    gl_FragColor = vec4(0.0, 0.0, 0.0, uAlpha * (1.0 - smoothstep(0.15, 1.0, d)));",
+      "    return;",
+      "  }",
+      "  vec3 N = normalize(vNormC); vec3 V = normalize(-vPosC);",
+      "  if (dot(N, V) < 0.0) N = -N;",
+      "  vec3 base = lin(uColor);",
+      "  vec3 T = vTanC - N * dot(vTanC, N); float tl = length(T); T = tl > 1e-4 ? T / tl : vec3(0.0);",
+      "  if (uMode > 1.5 && uMode < 2.5) {", // hair strands
+      "    float ang = atan(vPosM.x, vPosM.z + 1.0);",
+      "    float s = sin(ang * 70.0 + sin(vPosM.y * 0.9 + ang * 6.0) * 2.5) * 0.5 + 0.5;",
+      "    float s2 = sin(ang * 190.0 + vPosM.y * 2.0) * 0.5 + 0.5;",
+      "    base *= 0.72 + 0.28 * s * s + 0.1 * s2;",
+      "  }",
+      "  vec3 L1 = normalize(vec3(-0.45, 0.7, 0.6)); vec3 C1 = vec3(1.0, 0.96, 0.9) * 2.4;",
+      "  vec3 L2 = normalize(vec3(0.75, 0.15, 0.45)); vec3 C2 = vec3(0.85, 0.9, 1.0) * 0.9;",
+      "  vec3 L3 = normalize(vec3(0.1, 0.4, -1.0)); vec3 C3 = vec3(1.0) * 1.1;",
+      "  float NV = max(dot(N, V), 0.0);",
+      "  float fres = 0.04 + 0.96 * pow(1.0 - NV, 5.0);",
+      "  vec3 sky = vec3(0.95, 0.93, 0.95), ground = vec3(0.35, 0.3, 0.3);",
+      "  vec3 R = reflect(-V, N); vec3 env = mix(ground, sky, clamp(R.y * 0.5 + 0.6, 0.0, 1.0));",
+      "  vec3 col = base * mix(ground, sky, N.y * 0.5 + 0.5) * 0.28;",
+      "  for (int i = 0; i < 3; i++) {",
+      "    vec3 L = i == 0 ? L1 : (i == 1 ? L2 : L3); vec3 C = i == 0 ? C1 : (i == 1 ? C2 : C3);",
+      "    vec3 H = normalize(L + V); float NL = dot(N, L);",
+      "    if (uMode < 0.5 || uMode > 5.5) {", // plastic (glossy) or matte
+      "      float gloss = uMode < 0.5 ? 1.0 : 0.25;",
+      "      col += C * (base * max(NL, 0.0) * 0.32 + gloss * vec3(0.55) * pow(max(dot(N, H), 0.0), 90.0) * max(NL, 0.0));",
+      "    } else if (uMode < 1.5) {", // satin: soft wrap + sheen along the weave
+      "      float wrap = max((NL + 0.4) / 1.4, 0.0);",
+      "      col += C * (base * wrap * 0.3 + base * 0.6 * kk(T, H, 24.0) * max(NL + 0.2, 0.0) + vec3(0.12) * kk(T, H, 90.0));",
+      "    } else if (uMode < 2.5) {", // hair: Kajiya-Kay highlights along the strands
+      "      float wrap = max((NL + 0.25) / 1.25, 0.0);",
+      "      vec3 Ts = normalize(T + N * 0.12);",
+      "      float key = i == 0 ? 1.0 : 0.0;",
+      "      col += C * (base * wrap * 0.3 + key * (vec3(0.05) * kk(Ts, H, 240.0) + base * 0.1 * kk(T - N * 0.15, H, 70.0)) * wrap);",
+      "    } else if (uMode < 3.5) {", // skin: soft wrap with a warm tint in the shadows
+      "      float wrap = max((NL + 0.35) / 1.35, 0.0);",
+      "      col += C * (base * wrap * 0.3 + vec3(0.06, 0.015, 0.0) * (1.0 - max(NL, 0.0)) * wrap + vec3(0.08) * pow(max(dot(N, H), 0.0), 24.0) * max(NL, 0.0));",
+      "    } else {", // metal
+      "      col += C * (base * max(NL, 0.0) * 0.12 + base * pow(max(dot(N, H), 0.0), 60.0) * 1.4 * max(NL, 0.0));",
+      "    }",
+      "  }",
+      "  if (uMode < 0.5) col += env * fres * 0.35;",
+      "  if (uMode > 3.5 && uMode < 4.5) col += base * env * 0.45;",
+      "  if (uMode > 0.5 && uMode < 1.5) col += base * pow(1.0 - NV, 3.0) * 0.35;",
+      "  col = col / (1.0 + col * 0.25);",
+      "  gl_FragColor = vec4(pow(col, vec3(1.0 / 2.2)), uAlpha);",
+      "}"
+    ].join("\n");
+
+    function compile(type, src) {
+      var s = gl.createShader(type);
+      gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+      return s;
+    }
+    var prog = gl.createProgram();
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+    gl.useProgram(prog);
+    var loc = {
+      aPos: gl.getAttribLocation(prog, "aPos"), aNorm: gl.getAttribLocation(prog, "aNorm"), aTan: gl.getAttribLocation(prog, "aTan"),
+      uMVP: gl.getUniformLocation(prog, "uMVP"), uMV: gl.getUniformLocation(prog, "uMV"),
+      uColor: gl.getUniformLocation(prog, "uColor"), uMode: gl.getUniformLocation(prog, "uMode"),
+      uAlpha: gl.getUniformLocation(prog, "uAlpha"), uShadowR: gl.getUniformLocation(prog, "uShadowR")
+    };
+    gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.CULL_FACE);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    // Smooth shading: average the normals of neighbouring triangles, but keep
+    // edges sharper than ~50 degrees crisp.
+    function buildBuffers(mesh) {
+      var groups = {}, keyOf = function (p) { return Math.round(p[0] * 1e4) + "," + Math.round(p[1] * 1e4) + "," + Math.round(p[2] * 1e4); };
+      var faceN = mesh.tris.map(function (t) {
+        var ab = [t.b[0] - t.a[0], t.b[1] - t.a[1], t.b[2] - t.a[2]], ac = [t.c[0] - t.a[0], t.c[1] - t.a[1], t.c[2] - t.a[2]];
+        var n = [ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]];
+        var l = Math.hypot(n[0], n[1], n[2]) || 1;
+        return { n: [n[0] / l, n[1] / l, n[2] / l], w: l };
+      });
+      var at = {};
+      mesh.tris.forEach(function (t, i) {
+        [t.a, t.b, t.c].forEach(function (p) { var k = t.tag + "|" + keyOf(p); (at[k] = at[k] || []).push(i); });
+      });
+      var cosCrease = Math.cos(50 * Math.PI / 180);
+      mesh.tris.forEach(function (t, i) {
+        var g = groups[t.tag] = groups[t.tag] || { pos: [], nrm: [], tan: [] };
+        var fn = faceN[i].n;
+        [t.a, t.b, t.c].forEach(function (p) {
+          var list = at[t.tag + "|" + keyOf(p)], s = [0, 0, 0];
+          for (var k = 0; k < list.length; k++) {
+            var f = faceN[list[k]];
+            if (f.n[0] * fn[0] + f.n[1] * fn[1] + f.n[2] * fn[2] > cosCrease) { s[0] += f.n[0] * f.w; s[1] += f.n[1] * f.w; s[2] += f.n[2] * f.w; }
+          }
+          var l = Math.hypot(s[0], s[1], s[2]) || 1;
+          g.pos.push(p[0], p[1], p[2]); g.nrm.push(s[0] / l, s[1] / l, s[2] / l);
+          var tg = t.tan || [0, 0, 0]; g.tan.push(tg[0], tg[1], tg[2]);
+        });
+      });
+      var out = {};
+      Object.keys(groups).forEach(function (tag) {
+        var g = groups[tag], b = { count: g.pos.length / 3 };
+        ["pos", "nrm", "tan"].forEach(function (k) {
+          b[k] = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b[k]);
+          gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(g[k]), gl.STATIC_DRAW);
+        });
+        out[tag] = b;
+      });
+      return out;
+    }
+
+    // Clip parts are built once; the spacing only moves
+    // the prong and sleeve copies, stretches the glove band and slides the knob.
+    var clipBufs = null, floorBuf = null;
+    function ensureClip() {
+      if (clipBufs) return;
+      var parts = M.buildClipParts();
+      clipBufs = {};
+      Object.keys(parts).forEach(function (k) { clipBufs[k] = buildBuffers(parts[k]); });
+    }
+    function ensureFloor() {
+      if (floorBuf) return;
+      floorBuf = { pos: gl.createBuffer(), nrm: gl.createBuffer(), tan: gl.createBuffer(), count: 6 };
+      var s = 1, pos = [-s, 0, -s, s, 0, -s, s, 0, s, -s, 0, -s, s, 0, s, -s, 0, s], up = [], zero = [];
+      for (var i = 0; i < 6; i++) { up.push(0, 1, 0); zero.push(0, 0, 0); }
+      [["pos", pos], ["nrm", up], ["tan", zero]].forEach(function (e) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, floorBuf[e[0]]); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(e[1]), gl.STATIC_DRAW);
+      });
+    }
+
+    // ---- placement of each part ----------------------------------------------------
+    var APART = { comb: [0, 0, 0], slider: [0, 0.2, 2.4], spring: [0, 2.2, 1.6], caps: [0, 0, 0] };
+    function clipBase() { return mTranslate(0, 0, 0); }
+    function groupModel(g) {
+      var a = anim.apart, off = APART[g] || [0, 0, 0], t = [off[0] * a, off[1] * a, off[2] * a];
+      if (g === "caps") {
+        // The glove slides down along the prongs: fully off when the satin is off,
+        // part way off in "parts apart" so you can see it comes off in one piece.
+        var slide = (1 - anim.satin) * 6.5 + a * 3.2, d = M.GLOVE_OFF;
+        t = [t[0] + d[0] * slide, t[1] + d[1] * slide, t[2] + d[2] * slide];
+      }
+      return mMul(clipBase(), mTranslate(t[0], t[1], t[2]));
+    }
+
+    // ---- drawing --------------------------------------------------------------------
+    var P = null, Vm = null;
+    function draw() {
+      var W = canvas.width, H = canvas.height;
+      gl.viewport(0, 0, W, H);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      var onModel = state.view === "head";
+      P = mPerspective(36 * Math.PI / 180, W / H, 0.5, 400);
+      Vm = viewMatrix();
+      var hair = hexRgb(COLOURS[state.colour].hex);
+
+      function drawSet(set, model, look) {
+        var MV = mMul(Vm, model), MVP = mMul(P, MV);
+        gl.uniformMatrix4fv(loc.uMV, false, MV); gl.uniformMatrix4fv(loc.uMVP, false, MVP);
+        Object.keys(set).forEach(function (tag) {
+          var b = set[tag], m = look[tag];
+          if (!m || !b.count) return;
+          gl.uniform3fv(loc.uColor, m[0]); gl.uniform1f(loc.uMode, m[1]); gl.uniform1f(loc.uAlpha, 1);
+          if (tag === "hairBase") gl.disable(gl.CULL_FACE); // the hanging base layer is a single sheet: show both sides
+          bind(b); gl.drawArrays(gl.TRIANGLES, 0, b.count);
+          if (tag === "hairBase") gl.enable(gl.CULL_FACE);
+        });
+      }
+      function bind(b) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, b.pos); gl.enableVertexAttribArray(loc.aPos); gl.vertexAttribPointer(loc.aPos, 3, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, b.nrm); gl.enableVertexAttribArray(loc.aNorm); gl.vertexAttribPointer(loc.aNorm, 3, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, b.tan); gl.enableVertexAttribArray(loc.aTan); gl.vertexAttribPointer(loc.aTan, 3, gl.FLOAT, false, 0, 0);
+      }
+
+      var look = {
+        body: [hair, 0], prongs: [hair, 0], track: [shade(hair, 0.55), 0],
+        slider: [hexRgb(ROSE_GOLD), 4], spring: [hexRgb(STEEL), 4], caps: [hexRgb(SATIN), 1],
+        skin: [hexRgb(SKIN), 3], stand: [hexRgb(STAND), 6]
+      };
+
+      if (onModel) return; // "On a model" shows the concept drawing instead of the 3D view
+
+      // Soft floor shadow (drawn first, no depth write).
+      ensureFloor();
+      var shadowModel = mMul(mTranslate(0, -5.6, -0.3), (function () { var m = mat4(); m[0] = 5.2; m[5] = 1; m[10] = 2.6; m[15] = 1; return m; })());
+      var fMV = mMul(Vm, shadowModel);
+      gl.uniformMatrix4fv(loc.uMV, false, fMV); gl.uniformMatrix4fv(loc.uMVP, false, mMul(P, fMV));
+      gl.uniform1f(loc.uMode, 5); gl.uniform1f(loc.uAlpha, dark && dark.matches ? 0.5 : 0.28); gl.uniform2fv(loc.uShadowR, [1, 1]);
+      gl.disable(gl.CULL_FACE); gl.depthMask(false);
+      bind(floorBuf); gl.drawArrays(gl.TRIANGLES, 0, 6);
+      gl.depthMask(true); gl.enable(gl.CULL_FACE);
+
+      ensureClip();
+      var lay = M.layout(anim.spacing), comb = groupModel("comb"), caps = groupModel("caps");
+      drawSet(clipBufs.body, comb, look);
+      lay.prongs.forEach(function (o) { drawSet(clipBufs.prong, mMul(comb, mTranslate(o[0], o[1], o[2])), look); });
+      drawSet(clipBufs.knob, mMul(groupModel("slider"), mTranslate(lay.knob[0], lay.knob[1], lay.knob[2])), look);
+      if (anim.apart > 0.4) drawSet(clipBufs.spring, groupModel("spring"), look); // hidden inside the body otherwise
+      if (anim.satin > 0.02 || anim.apart > 0.01) {
+        lay.prongs.forEach(function (o) { drawSet(clipBufs.sleeve, mMul(caps, mTranslate(o[0], o[1], o[2])), look); });
+        var stretch = mat4(); stretch[0] = lay.bandScale; stretch[5] = stretch[10] = stretch[15] = 1;
+        drawSet(clipBufs.band, mMul(caps, stretch), look);
+      }
+    }
+
+    // ---- sizing -------------------------------------------------------------------
+    function resize() {
+      var r = canvas.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var w = Math.max(320, Math.round(r.width * dpr)), h = Math.round(w * 3 / 4);
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      draw();
+    }
+
+    // ---- animation ------------------------------------------------------------------
+    var raf = 0;
+    function step() {
+      raf = 0;
+      var moving = false;
+      var goal = { apart: state.view === "apart" ? 1 : 0, satin: state.satin ? 1 : 0, spacing: state.spacing };
+      ["apart", "satin", "spacing"].forEach(function (k) {
+        if (k === "spacing" && knobDrag) return;
+        var d = goal[k] - anim[k], rate = k === "satin" ? 0.07 : 0.22;
+        if (Math.abs(d) > 0.004) { anim[k] += d * rate; moving = true; } else anim[k] = goal[k];
+      });
+      if (camGoal) {
+        var q = camGoal.q, dq = Math.abs(cam.q[0] * q[0] + cam.q[1] * q[1] + cam.q[2] * q[2] + cam.q[3] * q[3]);
+        var done = dq > 0.99999 && Math.abs(camGoal.dist - cam.dist) < 0.05;
+        cam.q = done ? q.slice() : qSlerp(cam.q, q, 0.18);
+        cam.dist = done ? camGoal.dist : cam.dist + (camGoal.dist - cam.dist) * 0.18;
+        for (var i = 0; i < 3; i++) cam.target[i] += (camGoal.target[i] - cam.target[i]) * (done ? 1 : 0.18);
+        if (done) camGoal = null; else moving = true;
+      }
+      if (spinning && !drag) { cam.q = qNorm(qMul(cam.q, qAxis(0, 1, 0, -0.012))); moving = true; }
+      draw();
+      if (moving) raf = requestAnimationFrame(step);
+    }
+    function kick() { if (!raf) raf = requestAnimationFrame(step); }
+
+    // ---- controls -------------------------------------------------------------------
+    var colourBox = document.getElementById("colours");
+    Object.keys(COLOURS).forEach(function (k) {
+      var input = document.createElement("input"), label = document.createElement("label"), dot = document.createElement("span");
+      input.type = "radio"; input.name = "colour"; input.id = "colour-" + k; input.value = k; input.checked = k === state.colour;
+      label.htmlFor = input.id; dot.className = "dot"; dot.style.background = COLOURS[k].hex;
+      label.appendChild(dot); label.appendChild(document.createTextNode(COLOURS[k].label));
+      colourBox.appendChild(input); colourBox.appendChild(label);
+    });
+
+    function setView(name) {
+      var v = VIEWS[name], drawing = name === "head";
+      state.view = name;
+      camGoal = { q: qFromYawPitch(v.yaw, v.pitch), dist: v.dist, target: v.target.slice() };
+      document.getElementById("stage-label").textContent = v.label;
+      // "On a model" shows the concept drawing instead of the 3D viewer; the
+      // colour, spacing and satin buttons change the drawing.
+      canvas.hidden = drawing;
+      document.getElementById("stage-sketch").hidden = !drawing;
+      document.getElementById("stage-hint").textContent = drawing
+        ? "Use the colour, spacing and satin buttons to change the model"
+        : "Drag to turn it any way · drag the rose-gold knob to change the spacing · scroll or + / − to zoom";
+      document.querySelector(".zoom").hidden = drawing;
+      if (drawing) drawSketch();
+      if (drawing) setSpinning(false);
+      document.getElementById("spin").disabled = drawing;
+      kick();
+    }
+    function nearestSpacing(s) { return s < 0.25 ? "narrow" : s > 0.75 ? "wide" : "medium"; }
+    function syncSpacingButtons() {
+      var n = nearestSpacing(state.spacing);
+      ["narrow", "medium", "wide"].forEach(function (k) { document.getElementById("sp-" + k).checked = k === n; });
+    }
+    var spinBtn = document.getElementById("spin");
+    function setSpinning(on) {
+      spinning = on;
+      spinBtn.textContent = on ? "Stop spinning" : "Spin 360°";
+      spinBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      if (on) { camGoal = null; kick(); }
+    }
+    function resetAll() {
+      document.getElementById("view-clip").checked = true;
+      document.getElementById("satin-on").checked = true;
+      document.getElementById("colour-brown").checked = true;
+      state.spacing = 0.5; state.satin = true; state.colour = "brown";
+      syncSpacingButtons(); renderParts();
+      setSpinning(false);
+      setView("clip");
+    }
+    document.querySelectorAll("input[type=radio]").forEach(function (input) {
+      input.addEventListener("change", function () {
+        if (input.name === "view") return setView(input.value);
+        if (input.name === "spacing") state.spacing = M.SPACING[input.value];
+        if (input.name === "satin") state.satin = input.value === "on";
+        if (input.name === "colour") { state.colour = input.value; renderParts(); }
+        if (state.view === "head") drawSketch();
+        kick();
+      });
+    });
+    spinBtn.addEventListener("click", function () { setSpinning(!spinning); });
+    document.getElementById("reset").addEventListener("click", resetAll);
+    function zoom(by) {
+      if (camGoal) { cam.target = camGoal.target.slice(); cam.dist = camGoal.dist; camGoal = null; }
+      cam.dist = Math.max(8, Math.min(120, cam.dist * by)); draw();
+    }
+    document.getElementById("zoom-in").addEventListener("click", function () { zoom(0.85); });
+    document.getElementById("zoom-out").addEventListener("click", function () { zoom(1 / 0.85); });
+    canvas.addEventListener("wheel", function (e) { e.preventDefault(); zoom(e.deltaY > 0 ? 1.08 : 1 / 1.08); }, { passive: false });
+
+    // ---- the knob: drag it on the clip to change the spacing ---------------------
+    function toScreen(p, model) {
+      var r = canvas.getBoundingClientRect(), c = mApply(mMul(P, mMul(Vm, model)), p);
+      return { x: r.left + (c[0] * 0.5 + 0.5) * r.width, y: r.top + (0.5 - c[1] * 0.5) * r.height, behind: c[3] <= 0 };
+    }
+    function knobHit(e) {
+      if (!P || anim.apart > 0.05) return null;
+      var model = groupModel("slider"), Vmm = mMul(Vm, model);
+      // The knob must face the viewer (it's on the front of the body).
+      var nz = Vmm[10];
+      if (nz < 0.05) return null;
+      var k = M.knobCentre(anim.spacing);
+      var c = toScreen(k, model), a = toScreen([k[0] - 0.6, k[1], k[2]], model);
+      var rad = Math.max(16, Math.hypot(c.x - a.x, c.y - a.y) * 1.1);
+      if (c.behind || Math.hypot(e.clientX - c.x, e.clientY - c.y) > rad) return null;
+      return { model: model, A: toScreen(M.knobCentre(0), model), B: toScreen(M.knobCentre(1), model) };
+    }
+    var knobDrag = null;
+    function knobMove(e) {
+      var A = knobDrag.A, B = knobDrag.B, dx = B.x - A.x, dy = B.y - A.y, L = dx * dx + dy * dy || 1;
+      var s = ((e.clientX - A.x) * dx + (e.clientY - A.y) * dy) / L;
+      s = Math.max(0, Math.min(1, s));
+      state.spacing = s; anim.spacing = s; syncSpacingButtons(); draw();
+    }
+
+    function turn(dx, dy) {
+      var q = cam.q;
+      if (dx) q = qMul(qAxis(0, 1, 0, -dx), q);
+      if (dy) q = qMul(qAxis(1, 0, 0, dy), q);
+      cam.q = qNorm(q); draw();
+    }
+    canvas.addEventListener("pointerdown", function (e) {
+      if (camGoal) { cam.target = camGoal.target.slice(); cam.dist = camGoal.dist; camGoal = null; }
+      if (spinning) setSpinning(false);
+      canvas.setPointerCapture(e.pointerId);
+      var hit = knobHit(e);
+      if (hit) { knobDrag = hit; knobMove(e); return; }
+      drag = { x: e.clientX, y: e.clientY };
+      canvas.classList.add("grabbing");
+    });
+    canvas.addEventListener("pointermove", function (e) {
+      if (knobDrag) return knobMove(e);
+      if (!drag) { canvas.classList.toggle("on-knob", !!knobHit(e)); return; }
+      turn((e.clientX - drag.x) * 0.01, (e.clientY - drag.y) * 0.01);
+      drag.x = e.clientX; drag.y = e.clientY;
+    });
+    function endPointer() { drag = null; knobDrag = null; canvas.classList.remove("grabbing"); }
+    canvas.addEventListener("pointerup", endPointer);
+    canvas.addEventListener("pointercancel", endPointer);
+    canvas.tabIndex = 0;
+    canvas.addEventListener("keydown", function (e) {
+      var k = { ArrowLeft: [-0.15, 0], ArrowRight: [0.15, 0], ArrowUp: [0, -0.15], ArrowDown: [0, 0.15] }[e.key];
+      if (!k) return;
+      e.preventDefault(); turn(k[0], k[1]);
+    });
+
+    // ---- parts list and downloads ---------------------------------------------------
+    function renderParts() {
+      var hair = COLOURS[state.colour].hex;
+      var sw = { body: hair, prongs: hair, spring: STEEL, slider: ROSE_GOLD, caps: SATIN };
+      var ul = document.getElementById("parts");
+      ul.textContent = "";
+      M.PARTS.forEach(function (p) {
+        var li = document.createElement("li"), dot = document.createElement("span"), txt = document.createElement("div");
+        dot.className = "swatch"; dot.style.background = sw[p.id];
+        var name = document.createElement("strong"); name.textContent = p.name;
+        var mat = document.createElement("span"); mat.textContent = p.material;
+        var job = document.createElement("span"); job.textContent = p.job;
+        txt.appendChild(name); txt.appendChild(mat); txt.appendChild(job);
+        li.appendChild(dot); li.appendChild(txt); ul.appendChild(li);
+      });
+    }
+    var LABELS = { "clip-comb": "Comb (body and prongs)", "clip-slider-knob": "Slider knob" };
+    var printable = M.printParts(), dl = document.getElementById("downloads");
+    Object.keys(printable).forEach(function (name) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "btn"; b.textContent = LABELS[name] + " (.stl)";
+      b.addEventListener("click", function () {
+        var blob = new Blob([M.toSTL(printable[name], name)], { type: "model/stl" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob); a.download = name + ".stl";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      });
+      dl.appendChild(b);
+    });
+
+    // ---- concept illustration, redrawn from our hand sketch ---------------------------
+    function drawSketch() {
+      var svg = document.getElementById("sketch"), NS = "http://www.w3.org/2000/svg";
+      function el(name, attrs, parent) {
+        var e = document.createElementNS(NS, name);
+        Object.keys(attrs).forEach(function (k) {
+          // CSS variables aren't reliable in SVG attributes, so colours that use them go in style.
+          if (/^(fill|stroke|stop-color)$/.test(k) && String(attrs[k]).indexOf("var(") === 0) e.style.setProperty(k, attrs[k]);
+          else e.setAttribute(k, attrs[k]);
+        });
+        (parent || svg).appendChild(e);
+        return e;
+      }
+      function seeded(i) { var x = Math.sin(i * 91.7 + 13.1) * 43758.5; return x - Math.floor(x); }
+      // A small spiral: one curl, drawn as a loop that winds outward.
+      function curlPath(cx, cy, r, turns, start) {
+        var d = "", n = 28;
+        for (var i = 0; i <= n; i++) {
+          var t = i / n, a = start + t * turns * 2 * Math.PI, rr = r * (0.35 + 0.65 * t);
+          d += (i ? " L " : "M ") + (cx + rr * Math.cos(a)).toFixed(1) + " " + (cy + rr * Math.sin(a)).toFixed(1);
+        }
+        return d;
+      }
+      function rgbHex(c) { return "#" + c.map(function (v) { return ("0" + Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16)).slice(-2); }).join(""); }
+      function mix(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+      // The side controls drive the drawing: colour (hair and clip match, to show
+      // how it blends in), spacing (prong pitch) and satin on/off (prong tips).
+      var col = hexRgb(COLOURS[state.colour].hex);
+      var HAIR_BASE = rgbHex(mix(col, [0, 0, 0], 0.4)), HAIR_SHADOW = rgbHex(mix(col, [0, 0, 0], 0.6)), HAIR_HI = rgbHex(mix(col, [1, 0.92, 0.82], 0.12));
+      var CLIP_HI = rgbHex(mix(col, [1, 1, 1], 0.28)), CLIP_LO = rgbHex(mix(col, [0, 0, 0], 0.25));
+
+      var cx = 480, k = 0;
+      var defs = el("defs", {});
+      var g1 = el("radialGradient", { id: "sk-skin", cx: "45%", cy: "38%", r: "70%" }, defs);
+      el("stop", { offset: "0%", "stop-color": "#f4d9c4" }, g1); el("stop", { offset: "100%", "stop-color": "#dfb393" }, g1);
+      var g2 = el("linearGradient", { id: "sk-clip", x1: "0", y1: "0", x2: "0", y2: "1" }, defs);
+      el("stop", { offset: "0%", "stop-color": CLIP_HI }, g2); el("stop", { offset: "100%", "stop-color": CLIP_LO }, g2);
+
+      // Hair behind the face: volume on top and long sides down past the shoulders.
+      var hairBase = el("path", { fill: HAIR_BASE, d:
+        "M " + (cx - 150) + " 470 C " + (cx - 175) + " 360 " + (cx - 165) + " 250 " + (cx - 140) + " 180 " +
+        "C " + (cx - 110) + " 100 " + (cx - 55) + " 70 " + cx + " 68 C " + (cx + 55) + " 70 " + (cx + 110) + " 100 " + (cx + 140) + " 180 " +
+        "C " + (cx + 165) + " 250 " + (cx + 175) + " 360 " + (cx + 150) + " 470 L " + (cx + 70) + " 470 C " + (cx + 80) + " 380 " + (cx + 70) + " 330 " + (cx + 50) + " 320 " +
+        "L " + (cx - 50) + " 320 C " + (cx - 70) + " 330 " + (cx - 80) + " 380 " + (cx - 70) + " 470 Z" });
+      // Neck and shoulders.
+      el("path", { fill: "url(#sk-skin)", stroke: "var(--skin-line)", "stroke-width": "1.5", d:
+        "M " + (cx - 34) + " 330 L " + (cx - 36) + " 395 C " + (cx - 90) + " 410 " + (cx - 150) + " 425 " + (cx - 175) + " 505 L " + (cx + 175) + " 505 " +
+        "C " + (cx + 150) + " 425 " + (cx + 90) + " 410 " + (cx + 36) + " 395 L " + (cx + 34) + " 330 Z" });
+      // Face.
+      el("ellipse", { cx: cx, cy: 250, rx: 82, ry: 108, fill: "url(#sk-skin)", stroke: "var(--skin-line)", "stroke-width": "1.5" });
+      // Simple, calm features.
+      var feat = { fill: "none", stroke: "#8a5a44", "stroke-width": "2", "stroke-linecap": "round" };
+      el("path", Object.assign({ d: "M " + (cx - 52) + " 222 Q " + (cx - 34) + " 212 " + (cx - 16) + " 220" }, feat));
+      el("path", Object.assign({ d: "M " + (cx + 16) + " 220 Q " + (cx + 34) + " 212 " + (cx + 52) + " 222" }, feat));
+      el("path", Object.assign({ d: "M " + (cx - 48) + " 245 Q " + (cx - 34) + " 252 " + (cx - 20) + " 245" }, feat));
+      el("path", Object.assign({ d: "M " + (cx + 20) + " 245 Q " + (cx + 34) + " 252 " + (cx + 48) + " 245" }, feat));
+      el("path", Object.assign({ d: "M " + (cx - 2) + " 258 Q " + (cx - 8) + " 282 " + (cx + 6) + " 286" }, feat, { "stroke-width": "1.6" }));
+      el("path", { d: "M " + (cx - 20) + " 312 Q " + cx + " 324 " + (cx + 20) + " 312 Q " + cx + " 318 " + (cx - 20) + " 312 Z", fill: "#c9737a" });
+      // Hairline: the front section is swept back, so the forehead is clear.
+      var hairCap = el("path", { fill: HAIR_BASE, d:
+        "M " + (cx - 88) + " 230 C " + (cx - 92) + " 170 " + (cx - 60) + " 140 " + cx + " 136 C " + (cx + 60) + " 140 " + (cx + 92) + " 170 " + (cx + 88) + " 230 " +
+        "C " + (cx + 70) + " 175 " + (cx + 40) + " 158 " + cx + " 158 C " + (cx - 40) + " 158 " + (cx - 70) + " 175 " + (cx - 88) + " 230 Z" });
+
+      // Layers: curl shadows, then the prongs, then the curl highlights on top,
+      // so the hair crosses over the prongs and they just peek through.
+      var shadowG = el("g", { fill: "none", stroke: HAIR_SHADOW, "stroke-width": "3.6", "stroke-linecap": "round" });
+      var prongG = el("g", { fill: "none", "stroke-width": "5.5", "stroke-linecap": "round" });
+      var curlG = el("g", { fill: "none", stroke: HAIR_HI, "stroke-width": "1.9", "stroke-linecap": "round" });
+
+      // The clip's prongs go back over the head.
+      var clipY = 146, pitch = 15 + 7 * state.spacing, clipW = Math.max(132, 6 * pitch + 24);
+      var prongCol = state.satin ? "var(--satin)" : CLIP_LO;
+      for (var i = 0; i < 7; i++) {
+        var px = cx + (i - 3) * pitch;
+        el("path", { d: "M " + px + " " + clipY + " C " + (px + (px - cx) * 0.05) + " " + (clipY - 20) + " " + (px + (px - cx) * 0.12) + " " + (clipY - 36) + " " + (px + (px - cx) * 0.2) + " " + (clipY - 46),
+          stroke: prongCol }, prongG);
+      }
+
+      // Curls fill the whole head of hair: every point of the hair (top, sides,
+      // the swept-back front section and the lengths) gets a small spiral, each
+      // with a darker edge so they read as separate curls.
+      function inside(shape, x, y) {
+        try { return shape.isPointInFill(new DOMPoint(x, y)); } catch (e) { return true; }
+      }
+      var spots = [];
+      for (var gy = 62; gy < 482; gy += 11) {
+        for (var gx = cx - 190; gx <= cx + 190; gx += 11) {
+          var x = gx + (seeded(k++) - 0.5) * 8, y = gy + (seeded(k++) - 0.5) * 8;
+          var inFace = Math.pow((x - cx) / 84, 2) + Math.pow((y - 250) / 110, 2) < 1;
+          var onNeck = Math.abs(x - cx) < 58 && y > 300;
+          if (onNeck) continue;
+          if (inside(hairCap, x, y) || (!inFace && inside(hairBase, x, y))) spots.push([x, y]);
+        }
+      }
+      spots.forEach(function (p, n) {
+        var r = 6.5 + seeded(n * 3 + 1) * 3.5, a0 = seeded(n * 3 + 2) * 6.28, d = curlPath(p[0], p[1], r, 1.5, a0);
+        el("path", { d: d }, shadowG);
+        el("path", { d: d }, curlG);
+      });
+
+      el("path", { fill: "url(#sk-clip)", stroke: rgbHex(mix(col, [0, 0, 0], 0.6)), "stroke-width": "1.2", d:
+        "M " + (cx - clipW / 2) + " " + (clipY + 4) + " Q " + cx + " " + (clipY - 10) + " " + (cx + clipW / 2) + " " + (clipY + 4) +
+        " L " + (cx + clipW / 2 - 2) + " " + (clipY + 16) + " Q " + cx + " " + (clipY + 2) + " " + (cx - clipW / 2 + 2) + " " + (clipY + 16) + " Z" });
+      el("line", { x1: cx - 44, y1: clipY + 6.5, x2: cx + 44, y2: clipY + 6.5, stroke: rgbHex(mix(col, [0, 0, 0], 0.7)), "stroke-width": "1.4", "stroke-linecap": "round", opacity: "0.8" });
+      // The slider knob moves along its track with the spacing.
+      var knobX = cx - 30 + 60 * state.spacing;
+      el("rect", { x: knobX - 10, y: clipY + 0.5, width: 20, height: 11, rx: 5, fill: "var(--rose)", stroke: "#a86e62", "stroke-width": "1" });
+
+      // Callouts.
+      function callout(x1, y1, x2, y2, title, sub, anchor) {
+        el("circle", { cx: x1, cy: y1, r: 3.5, fill: "var(--callout)" });
+        el("path", { d: "M " + x1 + " " + y1 + " L " + x2 + " " + y2 + " L " + (x2 + (anchor === "end" ? -14 : 14)) + " " + y2,
+          stroke: "var(--callout)", "stroke-width": "1.2", fill: "none" });
+        var tx = x2 + (anchor === "end" ? -20 : 20);
+        var t = el("text", { x: tx, y: y2 - 3, "text-anchor": anchor }); t.textContent = title;
+        var s = el("text", { x: tx, y: y2 + 24, "text-anchor": anchor, class: "sub" }); s.textContent = sub;
+      }
+      callout(cx + 10, clipY + 6, cx + 140, 56, "Clip at the front", "Slider faces forward", "start");
+      callout(cx - 30, clipY - 40, cx - 130, 56, "Front section going back", "Curls run between the prongs", "end");
+      callout(cx - 160, 360, cx - 225, 330, "Rest of hair down", "Left loose underneath", "end");
+      callout(cx + 160, 400, cx + 225, 370, "Visible curls", "Curls left free", "start");
+    }
+    drawSketch();
+
+    if (dark && dark.addEventListener) dark.addEventListener("change", draw);
+
+    // Embedded in the Home page: tell it how tall this content is, so its frame fits
+    // with no inner scroll bar. (postMessage works between file:// pages too.)
+    if (document.documentElement.classList.contains("embed") && window.parent !== window) {
+      var sendHeight = function () {
+        window.parent.postMessage({ type: "rootclip-3d-height", height: Math.ceil(document.querySelector("main").getBoundingClientRect().height) }, "*");
+      };
+      if (window.ResizeObserver) new ResizeObserver(sendHeight).observe(document.querySelector("main"));
+      window.addEventListener("load", sendHeight);
+      window.addEventListener("resize", sendHeight);
+      sendHeight();
+    }
+    window.addEventListener("resize", resize);
+    renderParts();
+    resize();
+  })();
+  </script>
+</body>
+</html>

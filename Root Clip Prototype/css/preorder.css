@@ -1,0 +1,107 @@
+/* Preorder and thanks screens (#/preorder, #/thanks), js/views/preorder.js. */
+
+.product {
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.preorder .price {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.note {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.summary {
+  margin: 16px 0 24px;
+}
+
+.form {
+  padding: 18px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+div.field {
+  margin-bottom: 16px;
+}
+
+div.field label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.input {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--ink-soft); /* 3:1+ field edge in both themes */
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem; /* 16px keeps iOS from zooming */
+}
+
+.input::placeholder {
+  color: var(--ink-soft);
+  opacity: 0.8;
+}
+
+.input:focus-visible {
+  border-color: var(--focus);
+  border-radius: 10px;
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+.error {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--error-bg);
+  color: var(--error);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.form .btn {
+  width: 100%;
+}
+
+.notice {
+  margin: 20px 0;
+  padding: 10px 14px;
+  background: var(--banner-bg);
+  color: var(--banner-ink);
+  border: 1px solid var(--banner-line);
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 500;
+}
+
+@media (min-width: 640px) {
+  .form .btn {
+    width: auto;
+  }
+
+  .form {
+    padding: 24px;
+  }
+}
