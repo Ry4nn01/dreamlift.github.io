@@ -25,7 +25,7 @@ RootClip.views = RootClip.views || {};
   }
 
   function priceText() {
-    return "$" + RootClip.priceArm();
+    return "$" + RootClip.price();
   }
 
   function preorder(el) {

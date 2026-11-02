@@ -3,7 +3,6 @@ window.RootClip = window.RootClip || {};
 (function (RootClip) {
   "use strict";
 
-  var KEY = "rootclip.priceArm";
   var tests = [];
 
   function test(name, fn) { tests.push({ name: name, fn: fn }); }
@@ -18,26 +17,6 @@ window.RootClip = window.RootClip || {};
   }
 
   function copyMock() { return JSON.parse(JSON.stringify(window.MOCK)); }
-
-  // Fake store with the same get/set shape as RootClip.store. Never touches localStorage.
-  function fakeStore(initial) {
-    var data = {};
-    if (initial !== undefined) data[KEY] = initial;
-    return {
-      data: data,
-      get: function (k) { return Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null; },
-      set: function (k, v) { data[k] = String(v); return true; }
-    };
-  }
-
-  function throwingStore() {
-    return {
-      get: function () { throw new Error("storage blocked"); },
-      set: function () { throw new Error("storage blocked"); }
-    };
-  }
-
-  function isArm(n) { return n === 15 || n === 12; }
 
   function bannedErrors(errors) {
     return errors.filter(function (e) { return e.indexOf("banned word") >= 0; });
@@ -74,43 +53,14 @@ window.RootClip = window.RootClip || {};
     });
   });
 
-  // ---- Price arm (fake stores only, search always explicit) ----
+  // ---- Price: $12 for everyone ----
 
-  test("priceArm: ?price=12 gives 12 and stores it", function () {
-    var s = fakeStore();
-    eq(RootClip.priceArm("?price=12", s), 12);
-    eq(s.data[KEY], "12", "stored value");
+  test("price() is 12", function () {
+    eq(RootClip.price(), 12);
   });
 
-  test("priceArm: ?price=15 gives 15 and stores it", function () {
-    var s = fakeStore("12");
-    eq(RootClip.priceArm("?price=15", s), 15);
-    eq(s.data[KEY], "15", "stored value");
-  });
-
-  test("priceArm: ?price=10 is ignored and the stored value is reused", function () {
-    var s = fakeStore("12");
-    eq(RootClip.priceArm("?price=10", s), 12);
-    eq(s.data[KEY], "12", "stored value unchanged");
-  });
-
-  test("priceArm: stored \"12\" is reused with an empty search", function () {
-    var s = fakeStore("12");
-    eq(RootClip.priceArm("", s), 12);
-  });
-
-  test("priceArm: empty store gives 15 or 12 and stores it", function () {
-    var s = fakeStore();
-    var arm = RootClip.priceArm("", s);
-    assert(isArm(arm), "got " + arm);
-    eq(s.data[KEY], String(arm), "stored value");
-  });
-
-  test("priceArm: store whose get/set throw gives 15 or 12", function () {
-    var arm = RootClip.priceArm("", throwingStore());
-    assert(isArm(arm), "got " + arm);
-    var arm2 = RootClip.priceArm("?price=12", throwingStore());
-    eq(arm2, 12, "URL override with throwing store");
+  test("price() is the same every time (no random price, nothing stored)", function () {
+    for (var i = 0; i < 50; i++) eq(RootClip.price(), 12, "call " + i);
   });
 
   // ---- Banned words ----
@@ -134,8 +84,8 @@ window.RootClip = window.RootClip || {};
     expectRejected(function (m) { delete m.product.pitch; }, "missing pitch");
   });
 
-  test("validateData rejects prices.arms [15, 10]", function () {
-    expectRejected(function (m) { m.prices.arms = [15, 10]; }, "arms [15, 10]");
+  test("validateData rejects a price other than 12", function () {
+    expectRejected(function (m) { m.prices.price = 15; }, "price 15");
   });
 
   test("validateData rejects copy.thanks without {price}", function () {

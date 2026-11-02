@@ -104,17 +104,8 @@ window.RootClip = window.RootClip || {};
     var prices = section("prices");
     if (prices) {
       checkString(prices, "currency", "MOCK.prices");
-      if (!has(prices, "arms")) err("MOCK.prices.arms is missing.");
-      else if (!Array.isArray(prices.arms) || prices.arms.length !== 2 ||
-               !prices.arms.every(function (n) { return typeof n === "number"; }) ||
-               !sameMembers(prices.arms, [15, 12])) {
-        err("MOCK.prices.arms must be exactly [15, 12] (any order).");
-      }
-      if (!has(prices, "retail")) err("MOCK.prices.retail is missing.");
-      else if (typeof prices.retail !== "number" || (prices.retail !== 15 && prices.retail !== 12) ||
-               (Array.isArray(prices.arms) && prices.arms.indexOf(prices.retail) < 0)) {
-        err("MOCK.prices.retail must be a number in prices.arms.");
-      }
+      if (!has(prices, "price")) err("MOCK.prices.price is missing.");
+      else if (prices.price !== 12) err("MOCK.prices.price must be 12 (the price for everyone).");
     }
 
     // evidence

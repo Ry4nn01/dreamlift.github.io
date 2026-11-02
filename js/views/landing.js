@@ -116,7 +116,7 @@ RootClip.views = RootClip.views || {};
   function landing(el) {
     var M = window.MOCK;
     var ui = M.copy.ui;
-    var priceText = "$" + RootClip.priceArm();
+    var priceText = "$" + RootClip.price();
 
     while (el.firstChild) el.removeChild(el.firstChild);
     var wrap = make("div", "landing");

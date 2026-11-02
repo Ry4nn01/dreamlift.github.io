@@ -9,8 +9,7 @@ window.MOCK = {
 
   prices: {
     currency: "USD",
-    arms: [15, 12],
-    retail: 15
+    price: 12
   },
 
   evidence: [
