@@ -51,9 +51,10 @@
     .stage {
       position: relative; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
       background: radial-gradient(120% 90% at 50% 25%, var(--stage-top), var(--stage-bottom));
-      touch-action: none;
     }
-    .stage canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; cursor: grab; }
+    /* The canvas turns any way, so it takes every touch; the drawing only turns
+       side to side, so an up-down swipe there still scrolls the page. */
+    .stage canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; cursor: grab; touch-action: none; }
     .stage canvas.grabbing { cursor: grabbing; }
     .stage canvas.on-knob { cursor: ew-resize; }
     .stage-hint {
@@ -112,7 +113,12 @@
     @media (min-width: 860px) { .sections { grid-template-columns: 1fr 1fr; } }
 
     /* "On a model": the concept illustration (redrawn from our hand sketch) shown in the viewer */
-    .stage-sketch { aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; padding: 40px 8px 8px; }
+    .stage-sketch {
+      aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; padding: 40px 8px 8px;
+      cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none;
+    }
+    .stage-sketch.grabbing { cursor: grabbing; }
+    .stage-sketch:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
     .sketch {
       --hair: #3a2418; --hair-hi: #7a4b31; --skin: #ecc9ae; --skin-line: #c79878;
       --clip: #4a2e20; --clip-hi: #7d5440; --rose: #d39a8c; --satin: #e4b7c2;
@@ -225,7 +231,7 @@
           <li>How the slider moves the prongs inside the body: shown here as a concept only. The printed comb has fixed prongs at medium spacing, and the printed body is solid, with no pocket for the spring.</li>
           <li>How the satin glove attaches and how it stretches when the slider changes the spacing.</li>
           <li>Spring tension: to be tuned in the founder's test nights.</li>
-          <li>The model is a mannequin head with curls built in 3D, to show the look, not a real person.</li>
+          <li>"On a model" is a drawing that turns, to show the look, not a real person.</li>
         </ul>
       </section>
     </div>
@@ -251,7 +257,8 @@
     function shade(rgb, k) { return [rgb[0] * k, rgb[1] * k, rgb[2] * k]; }
 
     // ---- state ------------------------------------------------------------
-    var state = { view: "clip", spacing: 0.5, satin: true, colour: "brown" };
+    // yaw: how far the head in the "On a model" drawing is turned (radians, 0 = facing you).
+    var state = { view: "clip", spacing: 0.5, satin: true, colour: "brown", yaw: 0 };
     var anim = { apart: 0, satin: 1, spacing: 0.5 }; // animated toward the state
 
     // ---- quaternion camera: turn the clip any way, all the way round --------
@@ -592,7 +599,11 @@
         for (var i = 0; i < 3; i++) cam.target[i] += (camGoal.target[i] - cam.target[i]) * (done ? 1 : 0.18);
         if (done) camGoal = null; else moving = true;
       }
-      if (spinning && !drag) { cam.q = qNorm(qMul(cam.q, qAxis(0, 1, 0, -0.012))); moving = true; }
+      if (spinning && !drag && !sketchDrag) {
+        if (state.view === "head") { state.yaw += 0.02; drawSketch(); }
+        else cam.q = qNorm(qMul(cam.q, qAxis(0, 1, 0, -0.012)));
+        moving = true;
+      }
       draw();
       if (moving) raf = requestAnimationFrame(step);
     }
@@ -618,12 +629,10 @@
       canvas.hidden = drawing;
       document.getElementById("stage-sketch").hidden = !drawing;
       document.getElementById("stage-hint").textContent = drawing
-        ? "Use the colour, spacing and satin buttons to change the model"
+        ? "Drag left or right to turn the head all the way round · the colour, spacing and satin buttons change the model"
         : "Drag to turn it any way · drag the rose-gold knob to change the spacing · scroll or + / − to zoom";
       document.querySelector(".zoom").hidden = drawing;
       if (drawing) drawSketch();
-      if (drawing) setSpinning(false);
-      document.getElementById("spin").disabled = drawing;
       kick();
     }
     function nearestSpacing(s) { return s < 0.25 ? "narrow" : s > 0.75 ? "wide" : "medium"; }
@@ -642,7 +651,7 @@
       document.getElementById("view-clip").checked = true;
       document.getElementById("satin-on").checked = true;
       document.getElementById("colour-brown").checked = true;
-      state.spacing = 0.5; state.satin = true; state.colour = "brown";
+      state.spacing = 0.5; state.satin = true; state.colour = "brown"; state.yaw = 0;
       syncSpacingButtons(); renderParts();
       setSpinning(false);
       setView("clip");
@@ -701,7 +710,9 @@
     canvas.addEventListener("pointerdown", function (e) {
       if (camGoal) { cam.target = camGoal.target.slice(); cam.dist = camGoal.dist; camGoal = null; }
       if (spinning) setSpinning(false);
-      canvas.setPointerCapture(e.pointerId);
+      // Capture keeps the drag going outside the canvas; if the browser refuses it,
+      // carry on without it rather than stopping the drag.
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* capture is optional */ }
       var hit = knobHit(e);
       if (hit) { knobDrag = hit; knobMove(e); return; }
       drag = { x: e.clientX, y: e.clientY };
@@ -721,6 +732,36 @@
       var k = { ArrowLeft: [-0.15, 0], ArrowRight: [0.15, 0], ArrowUp: [0, -0.15], ArrowDown: [0, 0.15] }[e.key];
       if (!k) return;
       e.preventDefault(); turn(k[0], k[1]);
+    });
+
+    // ---- "On a model": drag the drawing (mouse or finger) to turn the head ---------
+    var sketchBox = document.getElementById("stage-sketch"), sketchDrag = null, sketchFrame = 0;
+    function turnHead(by) {
+      state.yaw += by;
+      if (!sketchFrame) sketchFrame = requestAnimationFrame(function () { sketchFrame = 0; drawSketch(); });
+    }
+    sketchBox.addEventListener("pointerdown", function (e) {
+      if (e.button > 0) return;
+      if (spinning) setSpinning(false);
+      sketchDrag = { x: e.clientX, id: e.pointerId };
+      try { sketchBox.setPointerCapture(e.pointerId); } catch (err) { /* capture is optional */ }
+      sketchBox.classList.add("grabbing");
+    });
+    sketchBox.addEventListener("pointermove", function (e) {
+      if (!sketchDrag || e.pointerId !== sketchDrag.id) return;
+      // One width of the drawing turns the head about one full turn.
+      turnHead((e.clientX - sketchDrag.x) / Math.max(200, sketchBox.clientWidth) * 2 * Math.PI);
+      sketchDrag.x = e.clientX;
+    });
+    function endSketchDrag() { sketchDrag = null; sketchBox.classList.remove("grabbing"); }
+    sketchBox.addEventListener("pointerup", endSketchDrag);
+    sketchBox.addEventListener("pointercancel", endSketchDrag); // e.g. the finger scrolled the page instead
+    sketchBox.addEventListener("lostpointercapture", endSketchDrag);
+    sketchBox.tabIndex = 0;
+    sketchBox.addEventListener("keydown", function (e) {
+      var by = { ArrowLeft: -0.2, ArrowRight: 0.2 }[e.key];
+      if (!by) return;
+      e.preventDefault(); if (spinning) setSpinning(false); turnHead(by);
     });
 
     // ---- parts list and downloads ---------------------------------------------------
@@ -767,7 +808,6 @@
         (parent || svg).appendChild(e);
         return e;
       }
-      function seeded(i) { var x = Math.sin(i * 91.7 + 13.1) * 43758.5; return x - Math.floor(x); }
       // A small spiral: one curl, drawn as a loop that winds outward.
       function curlPath(cx, cy, r, turns, start) {
         var d = "", n = 28;
@@ -787,37 +827,67 @@
       var HAIR_BASE = rgbHex(mix(col, [0, 0, 0], 0.4)), HAIR_SHADOW = rgbHex(mix(col, [0, 0, 0], 0.6)), HAIR_HI = rgbHex(mix(col, [1, 0.92, 0.82], 0.12));
       var CLIP_HI = rgbHex(mix(col, [1, 1, 1], 0.28)), CLIP_LO = rgbHex(mix(col, [0, 0, 0], 0.25));
 
-      var cx = 480, k = 0;
+      var cx = 480;
+      // Turning the head: things on the front of the head (face, hairline, clip) sit on
+      // a sphere of radius R round the head's centre line. X() moves an x from the
+      // front view to where it shows when the head is turned by yaw; facing() is
+      // how much that point still faces you (below 0 it's round the far side).
+      state.yaw = Math.atan2(Math.sin(state.yaw), Math.cos(state.yaw));
+      var yaw = state.yaw, front = Math.cos(yaw);
+      function ang(x, R) { return Math.asin(Math.max(-1, Math.min(1, (x - cx) / R))) + yaw; }
+      function X(x, R) { var a = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, ang(x, R))); return cx + R * Math.sin(a); }
+      function facing(x, R) { return Math.cos(ang(x, R)); }
+      // Apply X() to every x in a path written as "M x y C x y x y ...".
+      function turnPath(d, R) {
+        var n = 0;
+        return d.split(/\s+/).map(function (t) {
+          if (/^[A-Za-z]$/.test(t)) { n = 0; return t; }
+          var v = parseFloat(t); return (n++ % 2 === 0 ? X(v, R) : v).toFixed(1);
+        }).join(" ");
+      }
+      var R_FACE = 165, R_TOP = 120; // R_FACE: the hair's half-width at eye level, so a profile sits on the outline
       var defs = el("defs", {});
       var g1 = el("radialGradient", { id: "sk-skin", cx: "45%", cy: "38%", r: "70%" }, defs);
       el("stop", { offset: "0%", "stop-color": "#f4d9c4" }, g1); el("stop", { offset: "100%", "stop-color": "#dfb393" }, g1);
       var g2 = el("linearGradient", { id: "sk-clip", x1: "0", y1: "0", x2: "0", y2: "1" }, defs);
       el("stop", { offset: "0%", "stop-color": CLIP_HI }, g2); el("stop", { offset: "100%", "stop-color": CLIP_LO }, g2);
 
+      // Hair at the back, seen behind the neck (and through the gap the face leaves as it turns).
+      el("path", { fill: HAIR_SHADOW, d: "M " + (cx - 95) + " 470 L " + (cx - 95) + " 240 L " + (cx + 95) + " 240 L " + (cx + 95) + " 470 Z" });
       // Hair behind the face: volume on top and long sides down past the shoulders.
       var hairBase = el("path", { fill: HAIR_BASE, d:
         "M " + (cx - 150) + " 470 C " + (cx - 175) + " 360 " + (cx - 165) + " 250 " + (cx - 140) + " 180 " +
         "C " + (cx - 110) + " 100 " + (cx - 55) + " 70 " + cx + " 68 C " + (cx + 55) + " 70 " + (cx + 110) + " 100 " + (cx + 140) + " 180 " +
         "C " + (cx + 165) + " 250 " + (cx + 175) + " 360 " + (cx + 150) + " 470 L " + (cx + 70) + " 470 C " + (cx + 80) + " 380 " + (cx + 70) + " 330 " + (cx + 50) + " 320 " +
         "L " + (cx - 50) + " 320 C " + (cx - 70) + " 330 " + (cx - 80) + " 380 " + (cx - 70) + " 470 Z" });
-      // Neck and shoulders.
+      // Neck and shoulders; the neck leans a little toward where the face turns.
+      var nx = cx + 30 * Math.sin(yaw);
       el("path", { fill: "url(#sk-skin)", stroke: "var(--skin-line)", "stroke-width": "1.5", d:
-        "M " + (cx - 34) + " 330 L " + (cx - 36) + " 395 C " + (cx - 90) + " 410 " + (cx - 150) + " 425 " + (cx - 175) + " 505 L " + (cx + 175) + " 505 " +
-        "C " + (cx + 150) + " 425 " + (cx + 90) + " 410 " + (cx + 36) + " 395 L " + (cx + 34) + " 330 Z" });
-      // Face.
-      el("ellipse", { cx: cx, cy: 250, rx: 82, ry: 108, fill: "url(#sk-skin)", stroke: "var(--skin-line)", "stroke-width": "1.5" });
-      // Simple, calm features.
+        "M " + (nx - 34) + " 330 L " + (nx - 36) + " 395 C " + (cx - 90) + " 410 " + (cx - 150) + " 425 " + (cx - 175) + " 505 L " + (cx + 175) + " 505 " +
+        "C " + (cx + 150) + " 425 " + (cx + 90) + " 410 " + (nx + 36) + " 395 L " + (nx + 34) + " 330 Z" });
+      // Face: its two edges move round the head as it turns (gone when seen from behind).
+      var faceL = Math.max(-Math.PI / 2, ang(cx - 82, R_FACE)), faceR = Math.min(Math.PI / 2, ang(cx + 82, R_FACE));
+      var face = null;
+      if (faceR - faceL > 0.02) {
+        var fx1 = cx + R_FACE * Math.sin(faceL), fx2 = cx + R_FACE * Math.sin(faceR);
+        face = { cx: (fx1 + fx2) / 2, rx: (fx2 - fx1) / 2 };
+        el("ellipse", { cx: face.cx, cy: 250, rx: face.rx, ry: 108, fill: "url(#sk-skin)", stroke: "var(--skin-line)", "stroke-width": "1.5" });
+      }
+      // Simple, calm features, each shown while it still faces you.
       var feat = { fill: "none", stroke: "#8a5a44", "stroke-width": "2", "stroke-linecap": "round" };
-      el("path", Object.assign({ d: "M " + (cx - 52) + " 222 Q " + (cx - 34) + " 212 " + (cx - 16) + " 220" }, feat));
-      el("path", Object.assign({ d: "M " + (cx + 16) + " 220 Q " + (cx + 34) + " 212 " + (cx + 52) + " 222" }, feat));
-      el("path", Object.assign({ d: "M " + (cx - 48) + " 245 Q " + (cx - 34) + " 252 " + (cx - 20) + " 245" }, feat));
-      el("path", Object.assign({ d: "M " + (cx + 20) + " 245 Q " + (cx + 34) + " 252 " + (cx + 48) + " 245" }, feat));
-      el("path", Object.assign({ d: "M " + (cx - 2) + " 258 Q " + (cx - 8) + " 282 " + (cx + 6) + " 286" }, feat, { "stroke-width": "1.6" }));
-      el("path", { d: "M " + (cx - 20) + " 312 Q " + cx + " 324 " + (cx + 20) + " 312 Q " + cx + " 318 " + (cx - 20) + " 312 Z", fill: "#c9737a" });
+      function feature(x, d, attrs) {
+        if (facing(x, R_FACE) > 0.15) el("path", Object.assign({}, attrs, { d: turnPath(d, R_FACE) }));
+      }
+      feature(cx - 34, "M " + (cx - 52) + " 222 Q " + (cx - 34) + " 212 " + (cx - 16) + " 220", feat);
+      feature(cx + 34, "M " + (cx + 16) + " 220 Q " + (cx + 34) + " 212 " + (cx + 52) + " 222", feat);
+      feature(cx - 34, "M " + (cx - 48) + " 245 Q " + (cx - 34) + " 252 " + (cx - 20) + " 245", feat);
+      feature(cx + 34, "M " + (cx + 20) + " 245 Q " + (cx + 34) + " 252 " + (cx + 48) + " 245", feat);
+      feature(cx, "M " + (cx - 2) + " 258 Q " + (cx - 8) + " 282 " + (cx + 6) + " 286", Object.assign({}, feat, { "stroke-width": "1.6" }));
+      feature(cx, "M " + (cx - 20) + " 312 Q " + cx + " 324 " + (cx + 20) + " 312 Q " + cx + " 318 " + (cx - 20) + " 312 Z", { fill: "#c9737a" });
       // Hairline: the front section is swept back, so the forehead is clear.
-      var hairCap = el("path", { fill: HAIR_BASE, d:
+      var hairCap = face && front > -0.2 ? el("path", { fill: HAIR_BASE, d: turnPath(
         "M " + (cx - 88) + " 230 C " + (cx - 92) + " 170 " + (cx - 60) + " 140 " + cx + " 136 C " + (cx + 60) + " 140 " + (cx + 92) + " 170 " + (cx + 88) + " 230 " +
-        "C " + (cx + 70) + " 175 " + (cx + 40) + " 158 " + cx + " 158 C " + (cx - 40) + " 158 " + (cx - 70) + " 175 " + (cx - 88) + " 230 Z" });
+        "C " + (cx + 70) + " 175 " + (cx + 40) + " 158 " + cx + " 158 C " + (cx - 40) + " 158 " + (cx - 70) + " 175 " + (cx - 88) + " 230 Z", R_TOP) }) : null;
 
       // Layers: curl shadows, then the prongs, then the curl highlights on top,
       // so the hair crosses over the prongs and they just peek through.
@@ -825,44 +895,51 @@
       var prongG = el("g", { fill: "none", "stroke-width": "5.5", "stroke-linecap": "round" });
       var curlG = el("g", { fill: "none", stroke: HAIR_HI, "stroke-width": "1.9", "stroke-linecap": "round" });
 
-      // The clip's prongs go back over the head.
+      // The clip's prongs go back over the head (on the front, so hidden from behind).
       var clipY = 146, pitch = 15 + 7 * state.spacing, clipW = Math.max(132, 6 * pitch + 24);
-      var prongCol = state.satin ? "var(--satin)" : CLIP_LO;
-      for (var i = 0; i < 7; i++) {
+      var prongCol = state.satin ? "var(--satin)" : CLIP_LO, showClip = front > 0.05;
+      for (var i = 0; showClip && i < 7; i++) {
         var px = cx + (i - 3) * pitch;
-        el("path", { d: "M " + px + " " + clipY + " C " + (px + (px - cx) * 0.05) + " " + (clipY - 20) + " " + (px + (px - cx) * 0.12) + " " + (clipY - 36) + " " + (px + (px - cx) * 0.2) + " " + (clipY - 46),
+        if (facing(px, R_TOP) < 0.05) continue;
+        el("path", { d: turnPath("M " + px + " " + clipY + " C " + (px + (px - cx) * 0.05) + " " + (clipY - 20) + " " + (px + (px - cx) * 0.12) + " " + (clipY - 36) + " " + (px + (px - cx) * 0.2) + " " + (clipY - 46), R_TOP),
           stroke: prongCol }, prongG);
       }
 
-      // Curls fill the whole head of hair: every point of the hair (top, sides,
-      // the swept-back front section and the lengths) gets a small spiral, each
-      // with a darker edge so they read as separate curls.
+      // Curls fill the whole head of hair: small spirals all the way round the head,
+      // each with a darker edge so they read as separate curls. They sit on rings
+      // round the head, so they travel across it as it turns; only the near side shows.
+      var mask = sketchHairMask(hairBase), anchors = sketchCurlAnchors(mask, cx);
+      var shadowD = [], curlD = [];
+      anchors.forEach(function (c) {
+        var a = c.theta + yaw, cosA = Math.cos(a);
+        // Points near the edges crowd together, so drop some there to keep the density even.
+        if (cosA <= 0 || c.keep > Math.max(cosA, 0.35)) return;
+        var x = cx + c.r * Math.sin(a), y = c.y;
+        var backHair = y > 300 && y < 400 && Math.abs(x - cx) < 95; // the hair seen behind the neck
+        if (!(mask.has(x, y) || backHair) || (Math.abs(x - nx) < 40 && y > 325)) return;
+        var inFace = face && Math.pow((x - face.cx) / (face.rx + 2), 2) + Math.pow((y - 250) / 110, 2) < 1;
+        if (inFace && !(hairCap && inside(hairCap, x, y))) return;
+        var d = curlPath(x, y, c.size, 1.5, c.start);
+        shadowD.push(d); curlD.push(d);
+      });
       function inside(shape, x, y) {
         try { return shape.isPointInFill(new DOMPoint(x, y)); } catch (e) { return true; }
       }
-      var spots = [];
-      for (var gy = 62; gy < 482; gy += 11) {
-        for (var gx = cx - 190; gx <= cx + 190; gx += 11) {
-          var x = gx + (seeded(k++) - 0.5) * 8, y = gy + (seeded(k++) - 0.5) * 8;
-          var inFace = Math.pow((x - cx) / 84, 2) + Math.pow((y - 250) / 110, 2) < 1;
-          var onNeck = Math.abs(x - cx) < 58 && y > 300;
-          if (onNeck) continue;
-          if (inside(hairCap, x, y) || (!inFace && inside(hairBase, x, y))) spots.push([x, y]);
+      el("path", { d: shadowD.join(" ") }, shadowG);
+      el("path", { d: curlD.join(" ") }, curlG);
+
+      if (showClip) {
+        el("path", { fill: "url(#sk-clip)", stroke: rgbHex(mix(col, [0, 0, 0], 0.6)), "stroke-width": "1.2", d: turnPath(
+          "M " + (cx - clipW / 2) + " " + (clipY + 4) + " Q " + cx + " " + (clipY - 10) + " " + (cx + clipW / 2) + " " + (clipY + 4) +
+          " L " + (cx + clipW / 2 - 2) + " " + (clipY + 16) + " Q " + cx + " " + (clipY + 2) + " " + (cx - clipW / 2 + 2) + " " + (clipY + 16) + " Z", R_TOP) });
+        el("line", { x1: X(cx - 44, R_TOP), y1: clipY + 6.5, x2: X(cx + 44, R_TOP), y2: clipY + 6.5, stroke: rgbHex(mix(col, [0, 0, 0], 0.7)), "stroke-width": "1.4", "stroke-linecap": "round", opacity: "0.8" });
+        // The slider knob moves along its track with the spacing.
+        var knobX = cx - 30 + 60 * state.spacing, knobF = facing(knobX, R_TOP);
+        if (knobF > 0.1) {
+          var kw = 20 * knobF;
+          el("rect", { x: X(knobX, R_TOP) - kw / 2, y: clipY + 0.5, width: kw, height: 11, rx: Math.min(5, kw / 2), fill: "var(--rose)", stroke: "#a86e62", "stroke-width": "1" });
         }
       }
-      spots.forEach(function (p, n) {
-        var r = 6.5 + seeded(n * 3 + 1) * 3.5, a0 = seeded(n * 3 + 2) * 6.28, d = curlPath(p[0], p[1], r, 1.5, a0);
-        el("path", { d: d }, shadowG);
-        el("path", { d: d }, curlG);
-      });
-
-      el("path", { fill: "url(#sk-clip)", stroke: rgbHex(mix(col, [0, 0, 0], 0.6)), "stroke-width": "1.2", d:
-        "M " + (cx - clipW / 2) + " " + (clipY + 4) + " Q " + cx + " " + (clipY - 10) + " " + (cx + clipW / 2) + " " + (clipY + 4) +
-        " L " + (cx + clipW / 2 - 2) + " " + (clipY + 16) + " Q " + cx + " " + (clipY + 2) + " " + (cx - clipW / 2 + 2) + " " + (clipY + 16) + " Z" });
-      el("line", { x1: cx - 44, y1: clipY + 6.5, x2: cx + 44, y2: clipY + 6.5, stroke: rgbHex(mix(col, [0, 0, 0], 0.7)), "stroke-width": "1.4", "stroke-linecap": "round", opacity: "0.8" });
-      // The slider knob moves along its track with the spacing.
-      var knobX = cx - 30 + 60 * state.spacing;
-      el("rect", { x: knobX - 10, y: clipY + 0.5, width: 20, height: 11, rx: 5, fill: "var(--rose)", stroke: "#a86e62", "stroke-width": "1" });
 
       // Callouts.
       function callout(x1, y1, x2, y2, title, sub, anchor) {
@@ -873,10 +950,56 @@
         var t = el("text", { x: tx, y: y2 - 3, "text-anchor": anchor }); t.textContent = title;
         var s = el("text", { x: tx, y: y2 + 24, "text-anchor": anchor, class: "sub" }); s.textContent = sub;
       }
-      callout(cx + 10, clipY + 6, cx + 140, 56, "Clip at the front", "Slider faces forward", "start");
-      callout(cx - 30, clipY - 40, cx - 130, 56, "Front section going back", "Curls run between the prongs", "end");
-      callout(cx - 160, 360, cx - 225, 330, "Rest of hair down", "Left loose underneath", "end");
-      callout(cx + 160, 400, cx + 225, 370, "Visible curls", "Curls left free", "start");
+      // The labels point at the front view, so they show only while it faces you.
+      if (front > 0.97) {
+        callout(cx + 10, clipY + 6, cx + 140, 56, "Clip at the front", "Slider faces forward", "start");
+        callout(cx - 30, clipY - 40, cx - 130, 56, "Front section going back", "Curls run between the prongs", "end");
+        callout(cx - 160, 360, cx - 225, 330, "Rest of hair down", "Left loose underneath", "end");
+        callout(cx + 160, 400, cx + 225, 370, "Visible curls", "Curls left free", "start");
+      }
+    }
+
+    // The hair outline never changes, so which points are inside it is worked out
+    // once (on a 4-unit grid), along with the half-width of the hair on each row.
+    var hairMaskCache = null, curlAnchorCache = null;
+    function sketchHairMask(shape) {
+      if (hairMaskCache) return hairMaskCache;
+      var x0 = 280, y0 = 56, cell = 4, cols = 101, rows = 112, bits = new Uint8Array(cols * rows), halfW = {}, found = 0;
+      for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) {
+        var x = x0 + c * cell, y = y0 + r * cell, ins;
+        try { ins = shape.isPointInFill(new DOMPoint(x, y)); } catch (e) { ins = false; }
+        if (ins) { bits[r * cols + c] = 1; halfW[r] = Math.max(halfW[r] || 0, Math.abs(x - 480)); found++; }
+      }
+      var result = {
+        has: function (x, y) {
+          var c = Math.round((x - x0) / cell), r = Math.round((y - y0) / cell);
+          return c >= 0 && c < cols && r >= 0 && r < rows && bits[r * cols + c] === 1;
+        },
+        halfWidth: function (y) { return halfW[Math.round((y - y0) / cell)] || 0; }
+      };
+      // Some browsers can't test points while the drawing is hidden; try again next time.
+      if (found) hairMaskCache = result;
+      return result;
+    }
+    // Curl positions round the head: rows down the hair, each a ring as wide as the hair there.
+    function sketchCurlAnchors(mask, cx) {
+      if (curlAnchorCache) return curlAnchorCache;
+      function seeded(i) { var x = Math.sin(i * 91.7 + 13.1) * 43758.5; return x - Math.floor(x); }
+      var out = [], k = 0;
+      for (var gy = 62; gy < 482; gy += 11) {
+        var y = gy, r = mask.halfWidth(y);
+        if (r < 6) continue;
+        var n = Math.max(6, Math.round(2 * Math.PI * r / 11));
+        for (var j = 0; j < n; j++) {
+          out.push({
+            theta: (j + (seeded(k++) - 0.5) * 0.7) / n * 2 * Math.PI,
+            y: y + (seeded(k++) - 0.5) * 8, r: r,
+            size: 6.5 + seeded(k++) * 3.5, start: seeded(k++) * 6.28, keep: seeded(k++)
+          });
+        }
+      }
+      if (out.length) curlAnchorCache = out;
+      return out;
     }
     drawSketch();
 

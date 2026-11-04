@@ -2,8 +2,12 @@
  * #/ view: landing page and the clip drawing.
  *
  * Class names used (for css/landing.css):
- *   Sections: landing, hero, pitch, problem, evidence, how, parts, worries, price
- *   Hero:     clip-figure, clip, clip-caption, clip-3d-label, clip-3d, actions, btn, link
+ *   Sections: landing, hero, pitch, problem, fix, fix-text, evidence, how, parts, worries, price
+ *   Collapsible sections (problem, evidence, how, parts, worries):
+ *             acc, is-open, acc-head, acc-toggle, acc-title, acc-preview, acc-icon,
+ *             acc-panel, acc-inner
+ *   Fix:      clip-figure, clip, clip-caption, clip-3d-label, clip-3d, actions, btn, link
+ *   CTA bar:  cta-bar, cta-bar-price, btn
  *   Clip SVG: clip-body, clip-hinge, clip-spring, clip-track, clip-slider,
  *             clip-prong, clip-satin
  *   Stats:    stats, stat, stat-big, stat-text, stat-source
@@ -37,6 +41,40 @@ RootClip.views = RootClip.views || {};
     var s = make("section", className);
     if (headingText !== undefined) s.appendChild(make("h2", null, headingText));
     return s;
+  }
+
+  // A collapsible section: the heading is a button showing the title, a
+  // one-line preview and a chevron. Returns the section and the box to fill.
+  function accordion(className, headingText, previewText, open) {
+    var s = make("section", className + " acc");
+    var panelId = "landing-" + className + "-panel";
+    var h2 = make("h2", "acc-head");
+    var btn = make("button", "acc-toggle");
+    btn.setAttribute("type", "button");
+    btn.setAttribute("aria-controls", panelId);
+    btn.appendChild(make("span", "acc-title", headingText));
+    btn.appendChild(make("span", "acc-preview", previewText));
+    var icon = make("span", "acc-icon");
+    icon.setAttribute("aria-hidden", "true");
+    btn.appendChild(icon);
+    h2.appendChild(btn);
+    s.appendChild(h2);
+
+    var panel = make("div", "acc-panel");
+    panel.id = panelId;
+    var inner = make("div", "acc-inner");
+    panel.appendChild(inner);
+    s.appendChild(panel);
+
+    function setOpen(on) {
+      btn.setAttribute("aria-expanded", on ? "true" : "false");
+      s.classList.toggle("is-open", on);
+    }
+    btn.addEventListener("click", function () {
+      setOpen(btn.getAttribute("aria-expanded") !== "true");
+    });
+    setOpen(!!open);
+    return { section: s, body: inner };
   }
 
   // ---- Clip drawing (static shapes, front view of ONE clip) -------------
@@ -125,6 +163,15 @@ RootClip.views = RootClip.views || {};
     var hero = section("hero");
     hero.appendChild(make("h1", null, M.product.name));
     hero.appendChild(make("p", "pitch", M.product.pitch));
+    wrap.appendChild(hero);
+
+    // The flow: the problem first (open, it's one paragraph), then how DreamLift fixes it.
+    var problem = accordion("problem", ui.problemHeading, ui.problemPreview, true);
+    problem.body.appendChild(make("p", null, M.product.problem));
+    wrap.appendChild(problem.section);
+
+    var fix = section("fix", ui.fixHeading);
+    fix.appendChild(make("p", "fix-text", ui.fixText));
     var fig = make("figure", "clip-figure");
     fig.appendChild(clipSvg(ui.clipAlt));
     fig.appendChild(make("figcaption", "clip-caption", ui.clipCaption));
@@ -136,20 +183,15 @@ RootClip.views = RootClip.views || {};
     frame.setAttribute("title", ui.clip3dTitle);
     frame.setAttribute("height", "900");
     fig.appendChild(frame);
-    hero.appendChild(fig);
+    fix.appendChild(fig);
     var actions = make("p", "actions");
     actions.appendChild(link("#/preorder", "btn", ui.heroCta));
     actions.appendChild(link("#/guide", "link", ui.guideLink));
-    hero.appendChild(actions);
-    wrap.appendChild(hero);
-
-    // Problem
-    var problem = section("problem", ui.problemHeading);
-    problem.appendChild(make("p", null, M.product.problem));
-    wrap.appendChild(problem);
+    fix.appendChild(actions);
+    wrap.appendChild(fix);
 
     // Evidence
-    var evidence = section("evidence", ui.evidenceHeading);
+    var evidence = accordion("evidence", ui.evidenceHeading, ui.evidencePreview);
     var stats = make("ul", "stats");
     M.evidence.forEach(function (e) {
       var li = make("li", "stat");
@@ -160,22 +202,22 @@ RootClip.views = RootClip.views || {};
       li.appendChild(src);
       stats.appendChild(li);
     });
-    evidence.appendChild(stats);
-    wrap.appendChild(evidence);
+    evidence.body.appendChild(stats);
+    wrap.appendChild(evidence.section);
 
     // How it works (wash-night steps)
-    var how = section("how", ui.howHeading);
+    var how = accordion("how", ui.howHeading, ui.howPreview);
     var washNight = null;
     M.modes.forEach(function (m) { if (m.id === "wash-night") washNight = m; });
     var ol = make("ol", "steps");
     (washNight ? washNight.steps : []).forEach(function (step) {
       ol.appendChild(make("li", null, step));
     });
-    how.appendChild(ol);
-    wrap.appendChild(how);
+    how.body.appendChild(ol);
+    wrap.appendChild(how.section);
 
     // Parts
-    var parts = section("parts", ui.partsHeading);
+    var parts = accordion("parts", ui.partsHeading, ui.partsPreview);
     var partList = make("ul");
     M.parts.forEach(function (part) {
       var li = make("li", "part");
@@ -184,18 +226,18 @@ RootClip.views = RootClip.views || {};
       li.appendChild(make("p", "part-job", part.job));
       partList.appendChild(li);
     });
-    parts.appendChild(partList);
-    wrap.appendChild(parts);
+    parts.body.appendChild(partList);
+    wrap.appendChild(parts.section);
 
     // Worries
-    var worries = section("worries", ui.worriesHeading);
+    var worries = accordion("worries", ui.worriesHeading, ui.worriesPreview);
     M.worries.forEach(function (w) {
       var item = make("div", "worry");
       item.appendChild(make("h3", "worry-q", w.question));
       item.appendChild(make("p", "worry-a", w.answer));
-      worries.appendChild(item);
+      worries.body.appendChild(item);
     });
-    wrap.appendChild(worries);
+    wrap.appendChild(worries.section);
 
     // Price
     var price = section("price", ui.priceHeading);
@@ -205,6 +247,14 @@ RootClip.views = RootClip.views || {};
     priceActions.appendChild(link("#/preorder", "btn", ui.heroCta));
     price.appendChild(priceActions);
     wrap.appendChild(price);
+
+    // Sticky Preorder bar at the bottom of the screen (phones only, see landing.css).
+    var bar = make("div", "cta-bar");
+    bar.setAttribute("role", "region");
+    bar.setAttribute("aria-label", ui.ctaBarLabel);
+    bar.appendChild(make("p", "cta-bar-price", priceText));
+    bar.appendChild(link("#/preorder", "btn", ui.heroCta));
+    wrap.appendChild(bar);
 
     el.appendChild(wrap);
   }

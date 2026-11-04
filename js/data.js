@@ -150,10 +150,20 @@ window.MOCK = {
       clip3dTitle: "Interactive 3D model of the clip",
 
       problemHeading: "The problem",
+      fixHeading: "How DreamLift fixes it",
+      fixText: "One clip you sleep in. Satin-covered prongs hold your front roots up overnight, and a slider sets the spacing for your hair.",
       evidenceHeading: "What our survey found",
       howHeading: "How it works",
       partsHeading: "Five parts",
       worriesHeading: "Your top worries",
+
+      // One-line previews shown under each collapsible section's title.
+      problemPreview: "Roots go flat overnight, and nothing made for lift is safe to sleep in.",
+      evidencePreview: "82% and 67%: what 66 survey responses told us.",
+      howPreview: "Six steps, from damp hair at night to lifted roots in the morning.",
+      partsPreview: "Body and hinge, spring, prongs, spacing slider and satin tip caps.",
+      worriesPreview: "Comfort, fit and dents: how the design addresses each.",
+      ctaBarLabel: "Preorder the clip",
       priceHeading: "Price",
       priceNote: "One clip, satin tips included.",
 

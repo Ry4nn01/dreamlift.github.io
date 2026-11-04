@@ -11,6 +11,7 @@
   --surface-2: #f4eeec;
   --ink: #2a2326;
   --ink-soft: #5e5458;
+  --heading: #6b2740;       /* deep plum-rose: headings, so they stand apart from body text */
   --line: #e4dadb;
   /* Visible edge for controls (about 3:1); follows the theme via --ink-soft and --line. */
   --line-strong: color-mix(in srgb, var(--ink-soft) 55%, var(--line));
@@ -40,6 +41,7 @@
     --surface-2: #2d272a;
     --ink: #f1eaec;
     --ink-soft: #bfb3b8;
+    --heading: #f4c4d3;
     --line: #3d3539;
     --accent: #e7a1b8;
     --accent-ink: #2a1019;
@@ -93,20 +95,25 @@ h3 {
   line-height: 1.25;
   margin: 0 0 0.5em;
   overflow-wrap: anywhere;
+  color: var(--heading);
 }
 
 h1 {
   font-size: 1.75rem;
-  letter-spacing: -0.01em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 h2 {
-  font-size: 1.3rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
   margin-top: 0;
 }
 
 h3 {
-  font-size: 1.05rem;
+  font-size: 1.1rem;
+  font-weight: 700;
 }
 
 p {
@@ -267,6 +274,10 @@ main#app {
 @media (min-width: 640px) {
   h1 {
     font-size: 2.25rem;
+  }
+
+  h2 {
+    font-size: 1.65rem;
   }
 
   main#app {

@@ -69,6 +69,158 @@
   font-size: 1.05rem;
 }
 
+.fix-text {
+  font-size: 1.05rem;
+}
+
+/* ---- Collapsible sections ---------------------------------------------- */
+
+.landing > section.acc {
+  padding: 0;
+}
+
+.acc-head {
+  margin: 0;
+}
+
+/* The whole heading row is the tap target. */
+.acc-toggle {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 16px;
+  width: 100%;
+  min-height: 56px;
+  padding: 18px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.acc-title {
+  grid-column: 1;
+}
+
+.acc-preview {
+  grid-column: 1;
+  margin-top: 4px;
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+/* The preview repeats the content, so it goes once the section is open. */
+.acc.is-open .acc-preview {
+  display: none;
+}
+
+/* Chevron in a soft circle; points down when closed, up when open. */
+.acc-icon {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  transition: transform 0.3s ease;
+}
+
+.acc-icon::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  margin: -7px 0 0 -5px;
+  border-right: 2.5px solid var(--accent);
+  border-bottom: 2.5px solid var(--accent);
+  transform: rotate(45deg);
+}
+
+.acc.is-open .acc-icon {
+  transform: rotate(180deg);
+}
+
+.acc-toggle:hover .acc-title {
+  color: var(--accent);
+}
+
+/* Smooth open and close: the row grows from 0 to the content's height.
+   Closed content is also invisible, so it can't be tabbed to or read out. */
+.acc-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows 0.3s ease, visibility 0s linear 0.3s;
+}
+
+.acc.is-open .acc-panel {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition: grid-template-rows 0.3s ease, visibility 0s;
+}
+
+.acc-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Room below the content once it's open (inside, so it animates too). */
+.acc-inner > :last-child {
+  margin-bottom: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acc-panel,
+  .acc.is-open .acc-panel,
+  .acc-icon {
+    transition: none;
+  }
+}
+
+/* ---- Sticky Preorder bar (phones) -------------------------------------- */
+
+.cta-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 16px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.cta-bar-price {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.cta-bar .btn {
+  flex: 1;
+  max-width: 240px;
+}
+
+/* Room at the end of the page so the bar never covers the last content. */
+.landing {
+  padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+}
+
 .stats {
   list-style: none;
   padding: 0;
@@ -177,5 +329,14 @@
   .stats,
   .parts ul {
     grid-template-columns: 1fr 1fr;
+  }
+
+  /* Desktop: the hero and price buttons are enough, so no sticky bar. */
+  .cta-bar {
+    display: none;
+  }
+
+  .landing {
+    padding-bottom: 0;
   }
 }
