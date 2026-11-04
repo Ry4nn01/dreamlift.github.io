@@ -186,7 +186,7 @@
   }
 }
 
-/* ---- Sticky Preorder bar (phones) -------------------------------------- */
+/* ---- Sticky Preorder bar (every screen size) --------------------------- */
 
 .cta-bar {
   position: fixed;
@@ -331,12 +331,19 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  /* Desktop: the hero and price buttons are enough, so no sticky bar. */
+  /* Wider screens: the same bar, slimmer, lined up with the page column. */
   .cta-bar {
-    display: none;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: max(var(--gutter), calc((100% - var(--max)) / 2 + var(--gutter)));
+    padding-right: max(var(--gutter), calc((100% - var(--max)) / 2 + var(--gutter)));
   }
 
-  .landing {
-    padding-bottom: 0;
+  .cta-bar-price {
+    font-size: 1.3rem;
+  }
+
+  .cta-bar .btn {
+    flex: 0 1 220px;
   }
 }

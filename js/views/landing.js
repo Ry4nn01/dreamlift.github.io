@@ -248,7 +248,7 @@ RootClip.views = RootClip.views || {};
     price.appendChild(priceActions);
     wrap.appendChild(price);
 
-    // Sticky Preorder bar at the bottom of the screen (phones only, see landing.css).
+    // Sticky Preorder bar at the bottom of the screen, always visible while scrolling.
     var bar = make("div", "cta-bar");
     bar.setAttribute("role", "region");
     bar.setAttribute("aria-label", ui.ctaBarLabel);

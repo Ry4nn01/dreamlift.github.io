@@ -895,14 +895,25 @@
       var prongG = el("g", { fill: "none", "stroke-width": "5.5", "stroke-linecap": "round" });
       var curlG = el("g", { fill: "none", stroke: HAIR_HI, "stroke-width": "1.9", "stroke-linecap": "round" });
 
-      // The clip's prongs go back over the head (on the front, so hidden from behind).
+      // The prongs lie flat along the head: from the body at the front hairline they run
+      // straight back over the top of the head, parallel to each other and following the
+      // curve of the scalp. Each prong point is (u across, y down, z toward you); turning
+      // the head swings it round, and the part round the far side is left out. From the
+      // front they look short, since they point away from you; from the side you see
+      // them lying along the top of the head.
       var clipY = 146, pitch = 15 + 7 * state.spacing, clipW = Math.max(132, 6 * pitch + 24);
       var prongCol = state.satin ? "var(--satin)" : CLIP_LO, showClip = front > 0.05;
-      for (var i = 0; showClip && i < 7; i++) {
-        var px = cx + (i - 3) * pitch;
-        if (facing(px, R_TOP) < 0.05) continue;
-        el("path", { d: turnPath("M " + px + " " + clipY + " C " + (px + (px - cx) * 0.05) + " " + (clipY - 20) + " " + (px + (px - cx) * 0.12) + " " + (clipY - 36) + " " + (px + (px - cx) * 0.2) + " " + (clipY - 46), R_TOP),
-          stroke: prongCol }, prongG);
+      var sinY = Math.sin(yaw), cosY = Math.cos(yaw);
+      for (var i = 0; i < 7; i++) {
+        var u = (i - 3) * pitch, z0 = Math.sqrt(Math.max(0, R_TOP * R_TOP - u * u)), d = "", pen = false;
+        for (var s = 0; s <= 12; s++) {
+          var t = s / 12, z = z0 * (1 - 0.85 * t), y = clipY + 2 - 24 * Math.sin(t * Math.PI / 2);
+          var sx = cx + u * cosY + z * sinY, depth = z * cosY - u * sinY;
+          if (depth < -4) { pen = false; continue; }
+          d += (pen ? " L " : " M ") + sx.toFixed(1) + " " + y.toFixed(1);
+          pen = true;
+        }
+        if (d) el("path", { d: d, stroke: prongCol }, prongG);
       }
 
       // Curls fill the whole head of hair: small spirals all the way round the head,
@@ -953,7 +964,7 @@
       // The labels point at the front view, so they show only while it faces you.
       if (front > 0.97) {
         callout(cx + 10, clipY + 6, cx + 140, 56, "Clip at the front", "Slider faces forward", "start");
-        callout(cx - 30, clipY - 40, cx - 130, 56, "Front section going back", "Curls run between the prongs", "end");
+        callout(cx - 30, clipY - 18, cx - 130, 56, "Front section going back", "Curls run between the prongs", "end");
         callout(cx - 160, 360, cx - 225, 330, "Rest of hair down", "Left loose underneath", "end");
         callout(cx + 160, 400, cx + 225, 370, "Visible curls", "Curls left free", "start");
       }
