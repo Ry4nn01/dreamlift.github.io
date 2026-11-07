@@ -9,7 +9,6 @@ window.RootClip = window.RootClip || {};
     "#/": { view: "landing", title: "routeHomeTitle", cta: true },
     "#/why": { view: "why", title: "routeWhyTitle", cta: true },
     "#/how": { view: "how", title: "routeHowTitle", cta: true },
-    "#/about": { view: "about", title: "routeAboutTitle", cta: true },
     "#/guide": { view: "guide", title: "routeGuideTitle", cta: true },
     "#/preorder": { view: "preorder", title: "routePreorderTitle", cta: false },
     "#/thanks": { view: "thanks", title: "routeThanksTitle", cta: false }

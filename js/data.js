@@ -48,23 +48,6 @@ window.MOCK = {
     "Take it out in the morning"
   ],
 
-  // About us
-  about: {
-    intro: "We're Ryann Owen and Norah McDowell. DreamLift is our ENT 401 project.",
-    why: "One of us washes her hair at night and tried sleeping in a regular claw clip. It hurt her head and pulled at her roots. So we set out to make a clip that's made to be slept in.",
-    heard: [
-      "66 people answered our Instagram survey in two days.",
-      "Their top worries: comfort, whether it works on their hair, and dents.",
-      "So we designed around all three, with a slider for every hair type."
-    ],
-    testing: [
-      "Our founder sleeps in the prototype for 3 nights first.",
-      "Then 10 testers with straight, wavy and curly hair try it for 5 nights.",
-      "Each morning: a photo and a short survey on volume, comfort and dents.",
-      "Results aren't in yet, so we don't claim any."
-    ]
-  },
-
   parts: [
     {
       id: "body",
@@ -182,7 +165,6 @@ window.MOCK = {
       routeHomeTitle: "Home",
       routeWhyTitle: "Why DreamLift",
       routeHowTitle: "How it works",
-      routeAboutTitle: "About us",
       routeGuideTitle: "Fit guide",
       routePreorderTitle: "Preorder",
       routeThanksTitle: "Thanks",
@@ -214,11 +196,6 @@ window.MOCK = {
       clipAlt: "Front view of one root clip: comb-style prongs with rounded satin tips, a spring and hinge at the top, and a spacing slider on the outside.",
       clipCaption: "One clip, worn at the front of the head. Only the satin tips touch the scalp.",
       worriesHeading: "Your top questions",
-
-      // About us
-      aboutWhyHeading: "Why we started",
-      aboutHeardHeading: "What we heard",
-      aboutTestingHeading: "How we're testing it",
 
       priceNote: "One clip, satin tips included.",
 

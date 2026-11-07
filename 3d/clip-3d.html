@@ -697,6 +697,13 @@
         kick();
       });
     });
+    // Clicking the hair type that's already picked (Curly after Reset) fires no change
+    // event, but should still show it on the model.
+    document.querySelectorAll("input[name=hair]").forEach(function (input) {
+      input.addEventListener("click", function () {
+        if (state.view !== "head") { document.getElementById("view-head").checked = true; setView("head"); }
+      });
+    });
     spinBtn.addEventListener("click", function () { setSpinning(!spinning); });
     document.getElementById("reset").addEventListener("click", resetAll);
     function zoom(by) {
@@ -891,9 +898,9 @@
       var hairBase = el("path", { fill: HAIR_BASE, d: hairOutline(H, cx) });
       // Neck and shoulders; the neck leans a little toward where the face turns.
       var nx = cx + 30 * Math.sin(yaw);
-      el("path", { fill: "url(#sk-skin)", stroke: "var(--skin-line)", "stroke-width": "1.5", d:
-        "M " + (nx - 34) + " 330 L " + (nx - 36) + " 395 C " + (cx - 90) + " 410 " + (cx - 150) + " 425 " + (cx - 175) + " 505 L " + (cx + 175) + " 505 " +
-        "C " + (cx + 150) + " 425 " + (cx + 90) + " 410 " + (nx + 36) + " 395 L " + (nx + 34) + " 330 Z" });
+      var neckD = "M " + (nx - 34) + " 330 L " + (nx - 36) + " 395 C " + (cx - 90) + " 410 " + (cx - 150) + " 425 " + (cx - 175) + " 505 L " + (cx + 175) + " 505 " +
+        "C " + (cx + 150) + " 425 " + (cx + 90) + " 410 " + (nx + 36) + " 395 L " + (nx + 34) + " 330 Z";
+      el("path", { fill: "url(#sk-skin)", stroke: "var(--skin-line)", "stroke-width": "1.5", d: neckD });
       // Face: its two edges move round the head as it turns (gone when seen from behind).
       var faceL = Math.max(-Math.PI / 2, ang(cx - 82, R_FACE)), faceR = Math.min(Math.PI / 2, ang(cx + 82, R_FACE));
       var face = null;
@@ -914,17 +921,36 @@
       feature(cx, "M " + (cx - 2) + " 258 Q " + (cx - 8) + " 282 " + (cx + 6) + " 286", Object.assign({}, feat, { "stroke-width": "1.6" }));
       feature(cx, "M " + (cx - 20) + " 312 Q " + cx + " 324 " + (cx + 20) + " 312 Q " + cx + " 318 " + (cx - 20) + " 312 Z", { fill: "#c9737a" });
       // Hairline: the front section is swept back, so the forehead is clear.
-      var hairCap = face && front > -0.2 ? el("path", { fill: HAIR_BASE, d: turnPath(
+      var capD = face && front > -0.2 ? turnPath(
         "M " + (cx - 88) + " 230 C " + (cx - 92) + " 170 " + (cx - 60) + " 140 " + cx + " 136 C " + (cx + 60) + " 140 " + (cx + 92) + " 170 " + (cx + 88) + " 230 " +
-        "C " + (cx + 70) + " 175 " + (cx + 40) + " 158 " + cx + " 158 C " + (cx - 40) + " 158 " + (cx - 70) + " 175 " + (cx - 88) + " 230 Z", R_TOP) }) : null;
+        "C " + (cx + 70) + " 175 " + (cx + 40) + " 158 " + cx + " 158 C " + (cx - 40) + " 158 " + (cx - 70) + " 175 " + (cx - 88) + " 230 Z", R_TOP) : null;
+      var hairCap = capD ? el("path", { fill: HAIR_BASE, d: capD }) : null;
 
-      // Layers: curl shadows, then the prongs, then the curl highlights on top,
+      // Straight and wavy strands are long lines, so they're cut to the hair with masks:
+      // one for the hair in front (outline and hairline, minus the face and neck), one
+      // for the hair seen behind the neck. No strand can cross the face.
+      var strands = state.hair === "straight" || state.hair === "wavy";
+      if (strands) {
+        var frontMask = el("mask", { id: "sk-hair-front", maskUnits: "userSpaceOnUse", x: 0, y: 0, width: 960, height: 520 }, defs);
+        el("path", { d: hairOutline(H, cx), fill: "#fff" }, frontMask);
+        if (face) el("ellipse", { cx: face.cx, cy: 250, rx: face.rx + 1, ry: 109, fill: "#000" }, frontMask);
+        el("path", { d: neckD, fill: "#000" }, frontMask);
+        if (capD) el("path", { d: capD, fill: "#fff" }, frontMask);
+        var backMask = el("mask", { id: "sk-hair-back", maskUnits: "userSpaceOnUse", x: 0, y: 0, width: 960, height: 520 }, defs);
+        el("path", { d: "M " + (cx - 95) + " 470 L " + (cx - 95) + " 240 L " + (cx + 95) + " 240 L " + (cx + 95) + " 470 Z", fill: "#fff" }, backMask);
+        if (face) el("ellipse", { cx: face.cx, cy: 250, rx: face.rx + 1, ry: 109, fill: "#000" }, backMask);
+        el("path", { d: neckD, fill: "#000" }, backMask);
+      }
+      var backG = strands ? el("g", { fill: "none", "stroke-linecap": "round", mask: "url(#sk-hair-back)" }) : null;
+
+      // Layers: hair shadows, then the prongs, then the hair highlights on top,
       // so the hair crosses over the prongs and they just peek through.
       // Finer lines for straight and wavy strands, thicker for curls and coils.
       var lineW = { straight: [2.2, 1], wavy: [2.6, 1.2], curly: [3.6, 1.9], coily: [3, 1.6] }[state.hair];
       var shadowG = el("g", { fill: "none", stroke: HAIR_SHADOW, "stroke-width": lineW[0], "stroke-linecap": "round" });
       var prongG = el("g", { fill: "none", "stroke-width": "5.5", "stroke-linecap": "round" });
       var curlG = el("g", { fill: "none", stroke: HAIR_HI, "stroke-width": lineW[1], "stroke-linecap": "round" });
+      if (strands) { shadowG.setAttribute("mask", "url(#sk-hair-front)"); curlG.setAttribute("mask", "url(#sk-hair-front)"); }
 
       // The prongs lie flat along the head: from the body at the front hairline they run
       // straight back over the top of the head, parallel to each other and following the
@@ -947,10 +973,55 @@
         if (d) el("path", { d: d, stroke: prongCol }, prongG);
       }
 
-      // The whole head of hair is filled with texture, each piece with a darker edge:
-      // straight strands, S-shaped waves, curls, or small tight coils. They sit on rings
-      // round the head, so they travel across it as it turns; only the near side shows.
-      var mask = sketchHairMask(hairBase, state.hair), anchors = sketchCurlAnchors(mask, cx, state.hair);
+      var mask = sketchHairMask(hairBase, state.hair);
+      if (strands) { drawStrands(); return finish(); }
+
+      // Straight and wavy hair: long strands that start at the crown and fall over the
+      // head and down the lengths, each on its own line round the head (so they travel
+      // across it as it turns). Waves ripple together, like real waves, rather than each
+      // strand on its own. Strands facing you are lighter, the ones at the edges darker,
+      // with a band of shine near the top, so the hair looks rounded and glossy.
+      function drawStrands() {
+        function seeded(i) { var v = Math.sin(i * 91.7 + 13.1) * 43758.5; return v - Math.floor(v); }
+        var wavy = state.hair === "wavy", N = 170;
+        var tones = { deep: [], mid: [], hi: [], shine: [], back: [] };
+        var HAIR_MID = rgbHex(mix(col, [0, 0, 0], 0.2)), sheenY = H.top + 62;
+        for (var j = 0; j < N; j++) {
+          var theta = (j + (seeded(j * 5) - 0.5) * 0.8) / N * 2 * Math.PI, a = theta + yaw, cosA = Math.cos(a), sinA = Math.sin(a);
+          var behind = cosA <= 0;
+          // Strands crowd together near the edges, so keep fewer there.
+          if (!behind && seeded(j * 5 + 1) > Math.max(cosA, 0.3)) continue;
+          var yEnd = H.bot - seeded(j * 5 + 2) * (wavy ? 22 : 14), phase = theta * 3 + seeded(j * 5 + 3) * 0.6;
+          var d = "", shine = "", started = false;
+          for (var y = H.top + 1; y <= yEnd; y += 5) {
+            var r = mask.halfWidth(y);
+            if (r < 1) continue;
+            var depth = Math.max(0, Math.min(1, (y - H.top - 40) / 140));
+            var w = wavy ? 6 * depth * Math.sin((y - H.top) / 54 * 2 * Math.PI + phase)
+                         : 1.2 * depth * Math.sin((y - H.top) / 170 * 2 * Math.PI + phase);
+            var x = cx + r * sinA + w;
+            var pt = x.toFixed(1) + " " + y;
+            d += (started ? " L " : "M ") + pt;
+            if (!behind && Math.abs(y - sheenY) < 26) shine += (shine ? " L " : "M ") + pt;
+            started = true;
+          }
+          if (!d) continue;
+          if (behind) { tones.back.push(d); continue; }
+          var shade = cosA + (seeded(j * 5 + 4) - 0.5) * 0.5;
+          (shade > 0.78 ? tones.hi : shade > 0.38 ? tones.mid : tones.deep).push(d);
+          if (shine && cosA > 0.35) tones.shine.push(shine);
+        }
+        el("path", { d: tones.back.join(" "), stroke: HAIR_SHADOW, "stroke-width": 2.4 }, backG);
+        el("path", { d: tones.deep.join(" "), stroke: HAIR_SHADOW, "stroke-width": 2.4, opacity: 0.9 }, shadowG);
+        el("path", { d: tones.mid.join(" "), stroke: HAIR_MID, "stroke-width": 1.7, opacity: 0.85 }, shadowG);
+        el("path", { d: tones.hi.join(" "), stroke: HAIR_HI, "stroke-width": 1.2, opacity: 0.8 }, curlG);
+        el("path", { d: tones.shine.join(" "), stroke: rgbHex(mix(col, [1, 0.95, 0.88], 0.35)), "stroke-width": 1.4, opacity: 0.55 }, curlG);
+      }
+
+      // Curly and coily hair: small curls or tight coils all over the head, each with a
+      // darker edge. They sit on rings round the head, so they travel across it as it
+      // turns; only the near side shows.
+      var anchors = sketchCurlAnchors(mask, cx, state.hair);
       var shadowD = [], curlD = [];
       anchors.forEach(function (c) {
         var a = c.theta + yaw, cosA = Math.cos(a);
@@ -962,35 +1033,18 @@
         var inFace = face && Math.pow((x - face.cx) / (face.rx + 2), 2) + Math.pow((y - 250) / 110, 2) < 1;
         var inCap = inFace && hairCap && inside(hairCap, x, y);
         if (inFace && !inCap) return;
-        var d = hairPiece(x, y, c, inCap);
+        var d = state.hair === "coily" ? curlPath(x, y, c.size * 0.55, 2.6, c.start) : curlPath(x, y, c.size, 1.5, c.start);
         shadowD.push(d); curlD.push(d);
       });
-      // One piece of hair texture at (x, y). Strands and waves follow the way the hair
-      // falls: swept back (up, in this view) in the front section, out from the crown
-      // on top, and straight down the lengths.
-      function hairPiece(x, y, c, inCap) {
-        if (state.hair === "curly") return curlPath(x, y, c.size, 1.5, c.start);
-        if (state.hair === "coily") return curlPath(x, y, c.size * 0.55, 2.6, c.start);
-        var dx, dy;
-        if (inCap) { dx = (x - cx) * 0.004; dy = -1; }
-        else {
-          var fx = x - cx, fy = y - (H.top - 40), l = Math.hypot(fx, fy) || 1;
-          var down = Math.max(0, Math.min(1, (y - 190) / 60));
-          dx = (fx / l) * (1 - down) + 0.12 * Math.sign(fx) * down; dy = (fy / l) * (1 - down) + down;
-        }
-        var l2 = Math.hypot(dx, dy) || 1; dx /= l2; dy /= l2;
-        var wavy = state.hair === "wavy", len = wavy ? 30 : 30 + c.size, amp = wavy ? 3.4 : 0.6, n = 10, out = "";
-        for (var i = 0; i <= n; i++) {
-          var t = i / n - 0.5, w = amp * Math.sin((t + 0.5) * 2 * Math.PI * (wavy ? 1.25 : 0.5) + c.start);
-          out += (i ? " L " : "M ") + (x + dx * len * t - dy * w).toFixed(1) + " " + (y + dy * len * t + dx * w).toFixed(1);
-        }
-        return out;
-      }
       function inside(shape, x, y) {
         try { return shape.isPointInFill(new DOMPoint(x, y)); } catch (e) { return true; }
       }
       el("path", { d: shadowD.join(" ") }, shadowG);
       el("path", { d: curlD.join(" ") }, curlG);
+      finish();
+
+      // The clip body, knob and callouts go on top of the hair for every hair type.
+      function finish() {
 
       if (showClip) {
         el("path", { fill: "url(#sk-clip)", stroke: rgbHex(mix(col, [0, 0, 0], 0.6)), "stroke-width": "1.2", d: turnPath(
@@ -1024,6 +1078,7 @@
       }
       svg.setAttribute("aria-label", "Illustration: a woman's head from the front with " + H.label.toLowerCase() +
         " hair down. The front section of hair goes back through a comb clip at the top front of her head. The clip has a rose-gold slider on the front and satin-tipped prongs.");
+      }
     }
 
     // A hair type's outline: crown on top, sides down past the shoulders, and the
@@ -1054,7 +1109,18 @@
           var c = Math.round((x - x0) / cell), r = Math.round((y - y0) / cell);
           return c >= 0 && c < cols && r >= 0 && r < rows && bits[r * cols + c] === 1;
         },
-        halfWidth: function (y) { return halfW[Math.round((y - y0) / cell)] || 0; }
+        // Smoothed over nearby rows and between them, so long strands follow the
+        // outline in a smooth curve instead of stepping from row to row.
+        halfWidth: function (y) {
+          var f = (y - y0) / cell, r0 = Math.floor(f), t = f - r0;
+          function row(r) {
+            var sum = 0, n = 0;
+            for (var k = -2; k <= 2; k++) if (halfW[r + k]) { sum += halfW[r + k]; n++; }
+            return halfW[r] ? sum / n : 0;
+          }
+          var a = row(r0), b = row(r0 + 1);
+          return a && b ? a + (b - a) * t : (a || b);
+        }
       };
       // Some browsers can't test points while the drawing is hidden; try again next time.
       if (found) hairMaskCache[type] = result;

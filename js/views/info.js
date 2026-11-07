@@ -1,7 +1,7 @@
 /*
- * The content pages: #/why (Why DreamLift), #/how (How it works) and #/about
- * (About us), plus the clip drawing shown on How it works. Short points and
- * cards rather than long paragraphs.
+ * The content pages: #/why (Why DreamLift) and #/how (How it works), plus the
+ * clip drawing shown on How it works. Short points and cards rather than long
+ * paragraphs.
  *
  * Class names used (for css/info.css):
  *   Page:      info, lede, info-section, points, actions, btn, link
@@ -11,7 +11,6 @@
  *   Parts:     part-figure, clip, clip-caption, part-list, part, part-name, part-job, part-material
  *   Clip SVG:  clip-body, clip-hinge, clip-spring, clip-track, clip-slider, clip-prong, clip-satin
  *   Questions: faq, faq-item, is-open, faq-q, faq-icon, faq-panel, faq-inner
- *   About:     source
  */
 window.RootClip = window.RootClip || {};
 RootClip.views = RootClip.views || {};
@@ -251,29 +250,6 @@ RootClip.views = RootClip.views || {};
     wrap.appendChild(actions);
   }
 
-  // ---- #/about --------------------------------------------------------------
-
-  function about(el) {
-    var M = window.MOCK, ui = M.copy.ui;
-    var wrap = page(el, ui.routeAboutTitle, M.about.intro);
-
-    var whySec = section(ui.aboutWhyHeading);
-    whySec.appendChild(make("p", null, M.about.why));
-    wrap.appendChild(whySec);
-
-    var heard = section(ui.aboutHeardHeading);
-    heard.appendChild(points(M.about.heard));
-    var src = make("p", "source");
-    src.appendChild(make("small", null, M.evidence[0].source));
-    heard.appendChild(src);
-    wrap.appendChild(heard);
-
-    var testing = section(ui.aboutTestingHeading);
-    testing.appendChild(points(M.about.testing));
-    wrap.appendChild(testing);
-  }
-
   RootClip.views.why = why;
   RootClip.views.how = how;
-  RootClip.views.about = about;
 })(window.RootClip);

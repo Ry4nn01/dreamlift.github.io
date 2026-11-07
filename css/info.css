@@ -1,4 +1,4 @@
-/* Content pages: #/why, #/how and #/about, js/views/info.js. */
+/* Content pages: #/why and #/how, js/views/info.js. */
 
 .info .lede {
   font-size: 1.15rem;
@@ -39,11 +39,6 @@
   border-radius: 50%;
   background: var(--satin);
   box-shadow: 0 0 0 3px var(--accent-soft);
-}
-
-.source {
-  margin: 12px 0 0;
-  color: var(--ink-soft);
 }
 
 /* ---- Survey numbers ------------------------------------------------------- */
