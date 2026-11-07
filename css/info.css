@@ -1,0 +1,342 @@
+/* Content pages: #/why, #/how and #/about, js/views/info.js. */
+
+.info .lede {
+  font-size: 1.15rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.info-section {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+/* ---- Short points with a rose dot ----------------------------------------- */
+
+.points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.points li {
+  position: relative;
+  padding-left: 26px;
+}
+
+.points li + li {
+  margin-top: 10px;
+}
+
+.points li::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0.5em;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--satin);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.source {
+  margin: 12px 0 0;
+  color: var(--ink-soft);
+}
+
+/* ---- Survey numbers ------------------------------------------------------- */
+
+.stats {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.stat {
+  margin: 0;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.stat + .stat {
+  margin-top: 0;
+}
+
+.stat-big {
+  margin: 0;
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--accent);
+}
+
+.stat-text {
+  margin: 6px 0 8px;
+}
+
+.stat-source {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+/* ---- Night routine: numbered cards ---------------------------------------- */
+
+.step-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  counter-reset: step;
+}
+
+.step-card {
+  counter-increment: step;
+  margin: 0;
+  padding: 12px 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.step-card + .step-card {
+  margin-top: 0;
+}
+
+.step-card::before {
+  content: counter(step);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+/* ---- Three ways to wear it ------------------------------------------------- */
+
+.modes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.mode {
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.mode + .mode {
+  margin-top: 0;
+}
+
+.mode-name {
+  margin-bottom: 4px;
+}
+
+.mode-text {
+  margin: 0 0 10px;
+}
+
+.mode-tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mode-tag {
+  margin: 0;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.mode-tag + .mode-tag {
+  margin-top: 0;
+}
+
+/* ---- Five parts ------------------------------------------------------------ */
+
+.part-figure {
+  margin: 0 0 16px;
+  padding: 20px 16px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.clip {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  color: var(--ink);
+}
+
+/* The SVG sets its own fills and strokes from currentColor; only the satin
+   tips take a theme colour from CSS (overrides the fill attribute). */
+.clip-satin {
+  fill: var(--satin);
+}
+
+.clip-caption {
+  margin-top: 10px;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.part-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.part {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  column-gap: 12px;
+  margin: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.part + .part {
+  margin-top: 0;
+}
+
+.part-name {
+  font-weight: 700;
+  color: var(--heading);
+}
+
+.part-material {
+  grid-column: 2;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+/* ---- Top questions: tap to open ---------------------------------------------- */
+
+.faq-item {
+  border-bottom: 1px solid var(--line);
+}
+
+.faq-item h3 {
+  margin: 0;
+}
+
+.faq-q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.faq-q:hover {
+  color: var(--accent);
+}
+
+/* Chevron in a soft circle; turns over when open. */
+.faq-icon {
+  flex: none;
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  transition: transform 0.3s ease;
+}
+
+.faq-icon::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -6px 0 0 -4px;
+  border-right: 2.5px solid var(--accent);
+  border-bottom: 2.5px solid var(--accent);
+  transform: rotate(45deg);
+}
+
+.faq-item.is-open .faq-icon {
+  transform: rotate(180deg);
+}
+
+/* Smooth open and close; closed answers can't be tabbed to or read out. */
+.faq-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows 0.3s ease, visibility 0s linear 0.3s;
+}
+
+.faq-item.is-open .faq-panel {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition: grid-template-rows 0.3s ease, visibility 0s;
+}
+
+.faq-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.faq-inner p {
+  margin: 0 0 14px;
+  color: var(--ink-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faq-panel,
+  .faq-item.is-open .faq-panel,
+  .faq-icon {
+    transition: none;
+  }
+}
+
+@media (min-width: 640px) {
+  .stats,
+  .modes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .step-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

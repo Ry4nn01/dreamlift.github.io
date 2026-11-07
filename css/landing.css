@@ -1,61 +1,83 @@
-/* Landing screen (#/), js/views/landing.js. */
+/* Home screen (#/), js/views/landing.js. */
 
-.landing > section {
-  padding: 28px 0;
-  border-top: 1px solid var(--line);
-}
-
-.landing > section:first-child {
-  padding-top: 0;
-  border-top: 0;
+.landing > section + section {
+  margin-top: 28px;
 }
 
 .hero h1 {
   font-size: 1.9rem;
+  margin-bottom: 8px;
 }
 
-.pitch {
-  font-size: 1.1rem;
+.tagline {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 500;
+  line-height: 1.4;
   color: var(--ink-soft);
 }
 
-.clip-figure {
-  margin: 20px 0;
-  padding: 20px 16px 12px;
+/* ---- Designed for every hair type ------------------------------------- */
+
+.hair-types h2 {
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+}
+
+.hair-type-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.hair-type {
+  margin: 0;
+  padding: 12px 4px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
 
-.clip {
-  width: 100%;
-  max-width: 320px;
-  height: auto;
-  display: block;
-  margin: 0 auto;
-  color: var(--ink);
+.hair-type + .hair-type {
+  margin-top: 0;
 }
 
-/* The SVG sets its own fills and strokes from currentColor; only the satin
-   tips take a theme colour from CSS (overrides the fill attribute). */
-.clip-satin {
-  fill: var(--satin);
+.hair-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--accent);
 }
 
-.clip-caption {
-  margin-top: 10px;
-  font-size: 0.875rem;
+.hair-name {
+  margin-top: 6px;
+  font-weight: 700;
+  color: var(--heading);
+}
+
+.hair-spacing {
+  font-size: 0.75rem;
+  line-height: 1.3;
   color: var(--ink-soft);
-  text-align: center;
 }
 
-/* The interactive 3D model, under the sketch. Its height is set by the page inside it. */
+.hair-types-note {
+  margin: 10px 0 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+/* ---- The interactive 3D model. Its height is set by the page inside it. -- */
+
 .clip-3d-label {
-  margin: 20px 0 8px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
+  margin: 0 0 8px;
   font-weight: 600;
-  text-align: center;
 }
 
 .clip-3d {
@@ -65,285 +87,25 @@
   background: transparent;
 }
 
-.problem p {
-  font-size: 1.05rem;
-}
-
-.fix-text {
-  font-size: 1.05rem;
-}
-
-/* ---- Collapsible sections ---------------------------------------------- */
-
-.landing > section.acc {
-  padding: 0;
-}
-
-.acc-head {
-  margin: 0;
-}
-
-/* The whole heading row is the tap target. */
-.acc-toggle {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  column-gap: 16px;
-  width: 100%;
-  min-height: 56px;
-  padding: 18px 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.acc-title {
-  grid-column: 1;
-}
-
-.acc-preview {
-  grid-column: 1;
-  margin-top: 4px;
-  font-size: 0.95rem;
-  font-weight: 400;
-  letter-spacing: 0;
-  line-height: 1.45;
-  color: var(--ink-soft);
-}
-
-/* The preview repeats the content, so it goes once the section is open. */
-.acc.is-open .acc-preview {
-  display: none;
-}
-
-/* Chevron in a soft circle; points down when closed, up when open. */
-.acc-icon {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  position: relative;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  transition: transform 0.3s ease;
-}
-
-.acc-icon::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 9px;
-  height: 9px;
-  margin: -7px 0 0 -5px;
-  border-right: 2.5px solid var(--accent);
-  border-bottom: 2.5px solid var(--accent);
-  transform: rotate(45deg);
-}
-
-.acc.is-open .acc-icon {
-  transform: rotate(180deg);
-}
-
-.acc-toggle:hover .acc-title {
-  color: var(--accent);
-}
-
-/* Smooth open and close: the row grows from 0 to the content's height.
-   Closed content is also invisible, so it can't be tabbed to or read out. */
-.acc-panel {
-  display: grid;
-  grid-template-rows: 0fr;
-  visibility: hidden;
-  transition: grid-template-rows 0.3s ease, visibility 0s linear 0.3s;
-}
-
-.acc.is-open .acc-panel {
-  grid-template-rows: 1fr;
-  visibility: visible;
-  transition: grid-template-rows 0.3s ease, visibility 0s;
-}
-
-.acc-inner {
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* Room below the content once it's open (inside, so it animates too). */
-.acc-inner > :last-child {
-  margin-bottom: 24px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .acc-panel,
-  .acc.is-open .acc-panel,
-  .acc-icon {
-    transition: none;
-  }
-}
-
-/* ---- Sticky Preorder bar (every screen size) --------------------------- */
-
-.cta-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom, 0px));
-  background: var(--surface);
-  border-top: 1px solid var(--line);
-  box-shadow: 0 -4px 16px color-mix(in srgb, var(--ink) 10%, transparent);
-}
-
-.cta-bar-price {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.cta-bar .btn {
-  flex: 1;
-  max-width: 240px;
-}
-
-/* Room at the end of the page so the bar never covers the last content. */
-.landing {
-  padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-}
-
-.stats {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 12px;
-}
-
-.stat {
-  margin: 0;
-  padding: 16px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-}
-
-.stat + .stat {
-  margin-top: 0;
-}
-
-.stat-big {
-  margin: 0;
-  font-size: 2.25rem;
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--accent);
-}
-
-.stat-text {
-  margin: 6px 0 8px;
-}
-
-.stat-source {
-  margin: 0;
-  color: var(--ink-soft);
-}
-
-.parts ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 12px;
-}
-
-.part {
-  margin: 0;
-  padding: 14px 16px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-}
-
-.part + .part {
-  margin-top: 0;
-}
-
-.part-name {
-  margin-bottom: 4px;
-}
-
-.part-material {
-  margin-bottom: 6px;
-  font-size: 0.875rem;
-  color: var(--ink-soft);
-}
-
-.part-job {
-  margin: 0;
-}
-
-.worry {
-  padding: 14px 0 14px 14px;
-  border-left: 3px solid var(--satin);
-}
-
-.worry + .worry {
-  margin-top: 8px;
-}
-
-.worry-q {
-  margin-bottom: 4px;
-}
-
-.worry-a {
-  margin: 0;
-  color: var(--ink-soft);
-}
-
-.price-amount {
-  margin: 0 0 4px;
-  font-size: 2.5rem;
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.price-note {
-  color: var(--ink-soft);
-}
-
 @media (min-width: 640px) {
   .hero h1 {
     font-size: 2.25rem;
   }
 
-  .stats,
-  .parts ul {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  /* Wider screens: the same bar, slimmer, lined up with the page column. */
-  .cta-bar {
-    padding-top: 8px;
-    padding-bottom: 8px;
-    padding-left: max(var(--gutter), calc((100% - var(--max)) / 2 + var(--gutter)));
-    padding-right: max(var(--gutter), calc((100% - var(--max)) / 2 + var(--gutter)));
-  }
-
-  .cta-bar-price {
+  .tagline {
     font-size: 1.3rem;
   }
 
-  .cta-bar .btn {
-    flex: 0 1 220px;
+  .hair-type {
+    padding: 16px 8px 14px;
+  }
+
+  .hair-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .hair-spacing {
+    font-size: 0.85rem;
   }
 }

@@ -42,7 +42,8 @@ window.RootClip = window.RootClip || {};
   var TABLE = {
     straight: { fine: "narrow", medium: "narrow", thick: "medium" },
     wavy: { fine: "narrow", medium: "medium", thick: "wide" },
-    curly: { fine: "medium", medium: "wide", thick: "wide" }
+    curly: { fine: "medium", medium: "wide", thick: "wide" },
+    coily: { fine: "medium", medium: "wide", thick: "wide" }
   };
   Object.keys(TABLE).forEach(function (texture) {
     Object.keys(TABLE[texture]).forEach(function (thickness) {
@@ -79,6 +80,12 @@ window.RootClip = window.RootClip || {};
   });
 
   // ---- validateData rejects broken copies ----
+
+  test("validateData rejects a guide without coily hair", function () {
+    expectRejected(function (m) {
+      m.guide.textures = ["straight", "wavy", "curly"];
+    }, "no coily");
+  });
 
   test("validateData rejects a copy missing product.pitch", function () {
     expectRejected(function (m) { delete m.product.pitch; }, "missing pitch");

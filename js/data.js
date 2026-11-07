@@ -4,7 +4,7 @@ window.MOCK = {
   product: {
     name: "DreamLift Root Volume Clip",
     pitch: "A satin-tipped root clip you can sleep in, so you wake up with lifted roots instead of reaching for a hot tool.",
-    problem: "If you wash your hair at night, your roots go flat while you sleep. A regular claw clip hurts to sleep in and pulls at the roots, so most mornings end with re-wetting or heat. Nothing made for lifting roots is safe to sleep in."
+    problem: "Roots go flat overnight, and nothing made for lifting roots is safe to sleep in."
   },
 
   prices: {
@@ -24,6 +24,46 @@ window.MOCK = {
       source: "Instagram survey, 66 responses, Oct 2026"
     }
   ],
+
+  // Why DreamLift: the problem and the fix, as short points.
+  problemPoints: [
+    "Roots go flat while you sleep, especially after a night wash.",
+    "A regular claw clip hurts to sleep in and pulls at the roots.",
+    "So mornings mean re-wetting or heat: more time, more heat damage.",
+    "Root clips are made for about 20 minutes, not a whole night."
+  ],
+  fixPoints: [
+    "Made to sleep in: rounded prongs, and only the satin tips touch your scalp.",
+    "Lifts your front roots overnight, on damp or dry hair.",
+    "One slider sets the spacing for straight, wavy, curly or coily hair."
+  ],
+
+  // How it works: the night routine as short captions (full steps are in modes).
+  quickSteps: [
+    "Towel-dry to damp",
+    "Set the slider for your hair",
+    "Put on the satin tips",
+    "Comb it into your front roots",
+    "Sleep on your back or side",
+    "Take it out in the morning"
+  ],
+
+  // About us
+  about: {
+    intro: "We're Ryann Owen and Norah McDowell. DreamLift is our ENT 401 project.",
+    why: "One of us washes her hair at night and tried sleeping in a regular claw clip. It hurt her head and pulled at her roots. So we set out to make a clip that's made to be slept in.",
+    heard: [
+      "66 people answered our Instagram survey in two days.",
+      "Their top worries: comfort, whether it works on their hair, and dents.",
+      "So we designed around all three, with a slider for every hair type."
+    ],
+    testing: [
+      "Our founder sleeps in the prototype for 3 nights first.",
+      "Then 10 testers with straight, wavy and curly hair try it for 5 nights.",
+      "Each morning: a photo and a short survey on volume, comfort and dents.",
+      "Results aren't in yet, so we don't claim any."
+    ]
+  },
 
   parts: [
     {
@@ -62,25 +102,25 @@ window.MOCK = {
     {
       id: "comfort",
       question: "Will it be comfortable to sleep in?",
-      answer: "It's designed to be comfortable on your back or side: rounded satin tips, a light spring, and one clip that sits at the front of your head. Only the satin caps touch the scalp."
+      answer: "It's designed to be, on your back or side: rounded satin tips and a light spring. Only the satin touches your scalp."
     },
     {
       id: "fit",
       question: "Will it work on my hair?",
-      answer: "It's designed to work on straight, wavy and curly hair. The spacing slider moves the prongs closer together or further apart to suit your texture."
+      answer: "It's designed for straight, wavy, curly and coily hair. The slider moves the prongs closer together or further apart to suit yours."
     },
     {
       id: "dent",
       question: "Will it leave a dent or crease?",
-      answer: "It's designed to avoid dents and creases, with wide, rounded prongs and satin tips that let hair glide."
+      answer: "It's designed to avoid dents, with wide, rounded prongs and satin tips that let hair glide."
     }
   ],
 
   guide: {
-    textures: ["straight", "wavy", "curly"],
+    textures: ["straight", "wavy", "curly", "coily"],
     thicknesses: ["fine", "medium", "thick"],
     levels: ["narrow", "medium", "wide"],
-    baseByTexture: { straight: "narrow", wavy: "medium", curly: "wide" },
+    baseByTexture: { straight: "narrow", wavy: "medium", curly: "wide", coily: "wide" },
     thicknessShift: { fine: -1, medium: 0, thick: 1 },
     levelText: {
       narrow: "Slide the prongs close together. Closer prongs catch more strands at the root.",
@@ -93,6 +133,7 @@ window.MOCK = {
     {
       id: "wash-night",
       label: "Night after washing",
+      summary: "After a night wash, on damp hair.",
       hair: "damp",
       satin: true,
       steps: [
@@ -107,6 +148,7 @@ window.MOCK = {
     {
       id: "day-two",
       label: "Day two (night)",
+      summary: "Same steps on dry hair, to keep the volume from your last wash.",
       hair: "dry",
       satin: true,
       steps: [
@@ -121,6 +163,7 @@ window.MOCK = {
     {
       id: "daytime",
       label: "Daytime",
+      summary: "The plain clip, satin tips off, on dry hair.",
       hair: "dry",
       satin: false,
       steps: [
@@ -137,38 +180,50 @@ window.MOCK = {
     thanks: "Thanks for preordering at {price}. This is a prototype, so nothing was charged, sent or saved.",
     ui: {
       routeHomeTitle: "Home",
+      routeWhyTitle: "Why DreamLift",
+      routeHowTitle: "How it works",
+      routeAboutTitle: "About us",
       routeGuideTitle: "Fit guide",
       routePreorderTitle: "Preorder",
       routeThanksTitle: "Thanks",
 
+      // Home
+      tagline: "Sleep in it. Wake up with lifted roots, whatever your hair type.",
       heroCta: "Preorder",
       guideLink: "Find your slider setting",
+      hairTypesHeading: "Designed for every hair type",
+      hairTypesNote: "One slider sets the prong spacing for your hair.",
+      hairSpacing_narrow: "Narrow spacing",
+      hairSpacing_medium: "Medium spacing",
+      hairSpacing_wide: "Wide spacing",
+      clip3dLabel: "Turn it, slide the knob, or see it on a model in your hair type.",
+      clip3dTitle: "Interactive 3D model of the clip",
+      ctaBarLabel: "Preorder the clip",
 
+      // Why DreamLift
+      problemHeading: "The problem",
+      evidenceHeading: "What our survey found",
+      fixHeading: "How DreamLift fixes it",
+      howLink: "See how it works",
+
+      // How it works
+      howIntro: "One clip at the front of your head. In after the shower, out in the morning.",
+      nightHeading: "Your night routine",
+      modesHeading: "Three ways to wear it",
+      partsHeading: "Five parts",
       clipAlt: "Front view of one root clip: comb-style prongs with rounded satin tips, a spring and hinge at the top, and a spacing slider on the outside.",
       clipCaption: "One clip, worn at the front of the head. Only the satin tips touch the scalp.",
-      clip3dLabel: "Try it in 3D: turn it, slide the knob, switch the satin on and off, or see it on a model.",
-      clip3dTitle: "Interactive 3D model of the clip",
+      worriesHeading: "Your top questions",
 
-      problemHeading: "The problem",
-      fixHeading: "How DreamLift fixes it",
-      fixText: "One clip you sleep in. Satin-covered prongs hold your front roots up overnight, and a slider sets the spacing for your hair.",
-      evidenceHeading: "What our survey found",
-      howHeading: "How it works",
-      partsHeading: "Five parts",
-      worriesHeading: "Your top worries",
+      // About us
+      aboutWhyHeading: "Why we started",
+      aboutHeardHeading: "What we heard",
+      aboutTestingHeading: "How we're testing it",
 
-      // One-line previews shown under each collapsible section's title.
-      problemPreview: "Roots go flat overnight, and nothing made for lift is safe to sleep in.",
-      evidencePreview: "82% and 67%: what 66 survey responses told us.",
-      howPreview: "Six steps, from damp hair at night to lifted roots in the morning.",
-      partsPreview: "Body and hinge, spring, prongs, spacing slider and satin tip caps.",
-      worriesPreview: "Comfort, fit and dents: how the design addresses each.",
-      ctaBarLabel: "Preorder the clip",
-      priceHeading: "Price",
       priceNote: "One clip, satin tips included.",
 
       guideHeading: "Fit and spacing guide",
-      guideIntro: "Pick your hair texture, thickness and how you'll use the clip. We'll show your slider setting and the steps.",
+      guideIntro: "Pick your hair and how you'll wear it. We'll show your slider setting and the steps.",
       textureLabel: "Hair texture",
       thicknessLabel: "Hair thickness",
       modeLabel: "How you'll use it",
@@ -193,6 +248,7 @@ window.MOCK = {
       texture_straight: "Straight",
       texture_wavy: "Wavy",
       texture_curly: "Curly",
+      texture_coily: "Coily",
       thickness_fine: "Fine",
       thickness_medium: "Medium",
       thickness_thick: "Thick",

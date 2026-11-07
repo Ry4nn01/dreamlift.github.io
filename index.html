@@ -7,24 +7,36 @@
   <title>DreamLift Root Volume Clip</title>
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/landing.css">
+  <link rel="stylesheet" href="css/info.css">
   <link rel="stylesheet" href="css/guide.css">
   <link rel="stylesheet" href="css/preorder.css">
 </head>
 <body>
   <div id="banner" role="note"></div>
-  <header>
-    <nav id="nav">
-      <a href="#/">Home</a>
-      <a href="#/guide">Fit guide</a>
-      <a href="#/preorder">Preorder</a>
-    </nav>
+  <header id="header">
+    <div class="header-inner">
+      <a class="brand" href="#/">DreamLift</a>
+      <button type="button" id="menu-toggle" class="menu-toggle" aria-controls="nav" aria-expanded="false">
+        <span class="menu-icon" aria-hidden="true"></span>Menu
+      </button>
+      <nav id="nav" aria-label="Main">
+        <a href="#/">Home</a>
+        <a href="#/why">Why DreamLift</a>
+        <a href="#/how">How it works</a>
+        <a href="#/guide">Fit guide</a>
+        <a href="#/about">About us</a>
+        <a href="#/preorder">Preorder</a>
+      </nav>
+    </div>
   </header>
   <main id="app"></main>
+  <div id="cta-bar" class="cta-bar" hidden></div>
 
   <script src="js/data.js"></script>
   <script src="js/state.js"></script>
   <script src="js/guide-logic.js"></script>
   <script src="js/views/landing.js"></script>
+  <script src="js/views/info.js"></script>
   <script src="js/views/guide.js"></script>
   <script src="js/views/preorder.js"></script>
   <script src="js/router.js"></script>

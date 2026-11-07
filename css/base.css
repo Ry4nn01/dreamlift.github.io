@@ -170,34 +170,151 @@ header {
   border-bottom: 1px solid var(--line);
 }
 
-#nav {
+/* Phones: brand and a Menu button; the links drop down under them when open. */
+.header-inner {
   max-width: var(--max);
   margin: 0 auto;
-  padding: 0 calc(var(--gutter) - 8px);
+  padding: 0 var(--gutter);
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 52px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--heading);
+  text-decoration: none;
+}
+
+.menu-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Three bars that turn into an X when the menu is open. */
+.menu-icon,
+.menu-icon::before,
+.menu-icon::after {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.menu-icon {
+  position: relative;
+}
+
+.menu-icon::before,
+.menu-icon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+
+.menu-icon::before {
+  top: -6px;
+}
+
+.menu-icon::after {
+  top: 6px;
+}
+
+.menu-open .menu-icon {
+  background: transparent;
+}
+
+.menu-open .menu-icon::before {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.menu-open .menu-icon::after {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+#nav {
+  display: none;
+  flex-basis: 100%;
+  flex-direction: column;
+  padding: 4px 0 12px;
+}
+
+.menu-open #nav {
+  display: flex;
 }
 
 #nav a {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0 8px;
-  color: var(--ink-soft);
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: var(--ink);
   text-decoration: none;
   font-weight: 500;
-  border-bottom: 3px solid transparent;
 }
 
 #nav a:hover {
-  color: var(--ink);
+  background: var(--surface-2);
 }
 
 #nav a[aria-current="page"] {
   color: var(--accent);
-  border-bottom-color: var(--accent);
-  font-weight: 600;
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+
+/* ---- Sticky Preorder bar ------------------------------------------------ */
+
+.cta-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 16px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.cta-bar-price {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.cta-bar .btn {
+  flex: 1;
+  max-width: 240px;
+}
+
+/* Room at the end of the page so the bar never covers the last content. */
+body:has(.cta-bar:not([hidden])) main#app {
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
 }
 
 main#app {
@@ -283,10 +400,74 @@ main#app {
   main#app {
     padding-top: 36px;
   }
+
+  /* The Preorder bar, slimmer and lined up with the page column. */
+  .cta-bar {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: max(var(--gutter), calc((100% - var(--max)) / 2 + var(--gutter)));
+    padding-right: max(var(--gutter), calc((100% - var(--max)) / 2 + var(--gutter)));
+  }
+
+  .cta-bar-price {
+    font-size: 1.3rem;
+  }
+
+  .cta-bar .btn {
+    flex: 0 1 220px;
+  }
+}
+
+/* Wide enough for every link in one row: no Menu button. */
+@media (min-width: 780px) {
+  .header-inner {
+    flex-wrap: nowrap;
+    gap: 16px;
+  }
+
+  .menu-toggle {
+    display: none;
+  }
+
+  #nav,
+  .menu-open #nav {
+    display: flex;
+    flex-basis: auto;
+    flex-direction: row;
+    gap: 2px;
+    padding: 0;
+  }
+
+  #nav a {
+    min-height: 52px;
+    padding: 0 9px;
+    border-radius: 0;
+    border-bottom: 3px solid transparent;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+
+  #nav a:hover {
+    background: none;
+    color: var(--ink);
+  }
+
+  #nav a[aria-current="page"] {
+    background: none;
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .btn:active {
     transform: none;
+  }
+
+  .menu-icon,
+  .menu-icon::before,
+  .menu-icon::after {
+    transition: none;
   }
 }

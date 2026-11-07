@@ -1,20 +1,13 @@
 /*
- * #/ view: landing page and the clip drawing.
+ * #/ view: the home page. Short and visual: name, one-line value statement,
+ * the hair types it's designed for, the interactive 3D model and the call to action.
  *
  * Class names used (for css/landing.css):
- *   Sections: landing, hero, pitch, problem, fix, fix-text, evidence, how, parts, worries, price
- *   Collapsible sections (problem, evidence, how, parts, worries):
- *             acc, is-open, acc-head, acc-toggle, acc-title, acc-preview, acc-icon,
- *             acc-panel, acc-inner
- *   Fix:      clip-figure, clip, clip-caption, clip-3d-label, clip-3d, actions, btn, link
- *   CTA bar:  cta-bar, cta-bar-price, btn
- *   Clip SVG: clip-body, clip-hinge, clip-spring, clip-track, clip-slider,
- *             clip-prong, clip-satin
- *   Stats:    stats, stat, stat-big, stat-text, stat-source
- *   Steps:    steps
- *   Parts:    part, part-name, part-material, part-job
- *   Worries:  worry, worry-q, worry-a
- *   Price:    price-amount, price-note
+ *   Sections:   landing, hero, tagline
+ *   Hair types: hair-types, hair-types-note, hair-type-list, hair-type, hair-icon,
+ *               hair-name, hair-spacing
+ *   3D model:   model, clip-3d-label, clip-3d
+ *   Shared:     actions, btn, link
  */
 window.RootClip = window.RootClip || {};
 RootClip.views = RootClip.views || {};
@@ -37,115 +30,42 @@ RootClip.views = RootClip.views || {};
     return a;
   }
 
-  function section(className, headingText) {
-    var s = make("section", className);
-    if (headingText !== undefined) s.appendChild(make("h2", null, headingText));
-    return s;
+  // ---- Hair-type icons: three strands drawn in the texture -------------------
+  // Straight: plain lines. Wavy: gentle S-waves. Curly: loops. Coily: small tight loops.
+
+  function strand(type, x0) {
+    var pts = [], n = 60;
+    for (var i = 0; i <= n; i++) {
+      var t = i / n, x = x0, y = 7 + 26 * t;
+      if (type === "wavy") x = x0 + 3 * Math.sin(t * Math.PI * 3);
+      if (type === "curly" || type === "coily") {
+        // A loop-the-loop: a circle rolling down the strand.
+        var r = type === "curly" ? 3.4 : 2.2, turns = type === "curly" ? 2.5 : 4.5;
+        var a = t * turns * 2 * Math.PI;
+        x = x0 + r * Math.sin(a);
+        y = 9 + 22 * t - r * Math.cos(a) + r;
+      }
+      pts.push((i ? "L" : "M") + x.toFixed(2) + " " + y.toFixed(2));
+    }
+    return pts.join(" ");
   }
 
-  // A collapsible section: the heading is a button showing the title, a
-  // one-line preview and a chevron. Returns the section and the box to fill.
-  function accordion(className, headingText, previewText, open) {
-    var s = make("section", className + " acc");
-    var panelId = "landing-" + className + "-panel";
-    var h2 = make("h2", "acc-head");
-    var btn = make("button", "acc-toggle");
-    btn.setAttribute("type", "button");
-    btn.setAttribute("aria-controls", panelId);
-    btn.appendChild(make("span", "acc-title", headingText));
-    btn.appendChild(make("span", "acc-preview", previewText));
-    var icon = make("span", "acc-icon");
-    icon.setAttribute("aria-hidden", "true");
-    btn.appendChild(icon);
-    h2.appendChild(btn);
-    s.appendChild(h2);
-
-    var panel = make("div", "acc-panel");
-    panel.id = panelId;
-    var inner = make("div", "acc-inner");
-    panel.appendChild(inner);
-    s.appendChild(panel);
-
-    function setOpen(on) {
-      btn.setAttribute("aria-expanded", on ? "true" : "false");
-      s.classList.toggle("is-open", on);
-    }
-    btn.addEventListener("click", function () {
-      setOpen(btn.getAttribute("aria-expanded") !== "true");
+  function hairIcon(type) {
+    var svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", "0 0 40 40");
+    svg.setAttribute("class", "hair-icon");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    [11, 20, 29].forEach(function (x0) {
+      var p = document.createElementNS(SVG_NS, "path");
+      p.setAttribute("d", strand(type, x0));
+      p.setAttribute("fill", "none");
+      p.setAttribute("stroke", "currentColor");
+      p.setAttribute("stroke-width", type === "coily" ? "1.8" : "2.2");
+      p.setAttribute("stroke-linecap", "round");
+      p.setAttribute("stroke-linejoin", "round");
+      svg.appendChild(p);
     });
-    setOpen(!!open);
-    return { section: s, body: inner };
-  }
-
-  // ---- Clip drawing (static shapes, front view of ONE clip) -------------
-
-  function svgEl(tag, attrs) {
-    var node = document.createElementNS(SVG_NS, tag);
-    Object.keys(attrs).forEach(function (k) { node.setAttribute(k, attrs[k]); });
-    return node;
-  }
-
-  function clipSvg(label) {
-    var svg = svgEl("svg", {
-      viewBox: "0 0 240 150",
-      "class": "clip",
-      role: "img",
-      focusable: "false"
-    });
-    svg.setAttribute("aria-label", label);
-
-    // Spring coil on top of the hinge.
-    var spring = svgEl("g", {
-      "class": "clip-spring", fill: "none", stroke: "currentColor", "stroke-width": "2"
-    });
-    for (var i = 0; i < 5; i++) {
-      spring.appendChild(svgEl("ellipse", { cx: String(106 + i * 7), cy: "13", rx: "4", ry: "7" }));
-    }
-    svg.appendChild(spring);
-
-    // Hinge pin running through the coil.
-    svg.appendChild(svgEl("line", {
-      "class": "clip-hinge", x1: "96", y1: "13", x2: "144", y2: "13",
-      stroke: "currentColor", "stroke-width": "3", "stroke-linecap": "round"
-    }));
-
-    // Prongs: comb-style, rounded ends, hanging from the body.
-    var prongs = svgEl("g", {
-      "class": "clip-prong", fill: "currentColor", "fill-opacity": "0.25",
-      stroke: "currentColor", "stroke-width": "2"
-    });
-    var satin = svgEl("g", {
-      "class": "clip-satin", fill: "#d9a5b3", stroke: "currentColor", "stroke-width": "1.5"
-    });
-    for (var p = 0; p < 7; p++) {
-      var cx = 45 + p * 25;
-      prongs.appendChild(svgEl("rect", {
-        x: String(cx - 5), y: "40", width: "10", height: "92", rx: "5"
-      }));
-      satin.appendChild(svgEl("rect", {
-        x: String(cx - 7), y: "120", width: "14", height: "24", rx: "7"
-      }));
-    }
-    svg.appendChild(prongs);
-    svg.appendChild(satin);
-
-    // Body and hinge bar.
-    svg.appendChild(svgEl("rect", {
-      "class": "clip-body", x: "28", y: "20", width: "184", height: "28", rx: "9",
-      fill: "currentColor", "fill-opacity": "0.15", stroke: "currentColor", "stroke-width": "3"
-    }));
-
-    // Spacing slider on the outside of the body: a track and a knob.
-    svg.appendChild(svgEl("line", {
-      "class": "clip-track", x1: "52", y1: "34", x2: "188", y2: "34",
-      stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round",
-      "stroke-dasharray": "2 5"
-    }));
-    svg.appendChild(svgEl("rect", {
-      "class": "clip-slider", x: "126", y: "26", width: "26", height: "16", rx: "5",
-      fill: "currentColor", "fill-opacity": "0.45", stroke: "currentColor", "stroke-width": "2"
-    }));
-
     return svg;
   }
 
@@ -154,107 +74,46 @@ RootClip.views = RootClip.views || {};
   function landing(el) {
     var M = window.MOCK;
     var ui = M.copy.ui;
-    var priceText = "$" + RootClip.price();
 
     while (el.firstChild) el.removeChild(el.firstChild);
     var wrap = make("div", "landing");
 
-    // Hero
-    var hero = section("hero");
+    // Name and value statement
+    var hero = make("section", "hero");
     hero.appendChild(make("h1", null, M.product.name));
-    hero.appendChild(make("p", "pitch", M.product.pitch));
+    hero.appendChild(make("p", "tagline", ui.tagline));
     wrap.appendChild(hero);
 
-    // The flow: the problem first (open, it's one paragraph), then how DreamLift fixes it.
-    var problem = accordion("problem", ui.problemHeading, ui.problemPreview, true);
-    problem.body.appendChild(make("p", null, M.product.problem));
-    wrap.appendChild(problem.section);
+    // Designed for every hair type: one icon per texture, with its starting spacing.
+    var types = make("section", "hair-types");
+    types.appendChild(make("h2", null, ui.hairTypesHeading));
+    var list = make("ul", "hair-type-list");
+    M.guide.textures.forEach(function (t) {
+      var li = make("li", "hair-type");
+      li.appendChild(hairIcon(t));
+      li.appendChild(make("span", "hair-name", ui["texture_" + t]));
+      li.appendChild(make("span", "hair-spacing", ui["hairSpacing_" + M.guide.baseByTexture[t]]));
+      list.appendChild(li);
+    });
+    types.appendChild(list);
+    types.appendChild(make("p", "hair-types-note", ui.hairTypesNote));
+    wrap.appendChild(types);
 
-    var fix = section("fix", ui.fixHeading);
-    fix.appendChild(make("p", "fix-text", ui.fixText));
-    var fig = make("figure", "clip-figure");
-    fig.appendChild(clipSvg(ui.clipAlt));
-    fig.appendChild(make("figcaption", "clip-caption", ui.clipCaption));
-    // The interactive 3D model, under the sketch: the 3D page's viewer and
-    // controls, shown in embedded mode. Its height comes from the page itself.
-    fig.appendChild(make("p", "clip-3d-label", ui.clip3dLabel));
+    // The interactive 3D model: the 3D page's viewer and controls, in embedded
+    // mode. Its height comes from the page itself.
+    var model = make("section", "model");
+    model.appendChild(make("p", "clip-3d-label", ui.clip3dLabel));
     var frame = make("iframe", "clip-3d");
     frame.setAttribute("src", "3d/clip-3d.html?embed=1");
     frame.setAttribute("title", ui.clip3dTitle);
     frame.setAttribute("height", "900");
-    fig.appendChild(frame);
-    fix.appendChild(fig);
+    model.appendChild(frame);
+    wrap.appendChild(model);
+
     var actions = make("p", "actions");
-    actions.appendChild(link("#/preorder", "btn", ui.heroCta));
+    actions.appendChild(link("#/preorder", "btn", ui.heroCta + " · $" + RootClip.price()));
     actions.appendChild(link("#/guide", "link", ui.guideLink));
-    fix.appendChild(actions);
-    wrap.appendChild(fix);
-
-    // Evidence
-    var evidence = accordion("evidence", ui.evidenceHeading, ui.evidencePreview);
-    var stats = make("ul", "stats");
-    M.evidence.forEach(function (e) {
-      var li = make("li", "stat");
-      li.appendChild(make("p", "stat-big", e.stat));
-      li.appendChild(make("p", "stat-text", e.text));
-      var src = make("p", "stat-source");
-      src.appendChild(make("small", null, e.source));
-      li.appendChild(src);
-      stats.appendChild(li);
-    });
-    evidence.body.appendChild(stats);
-    wrap.appendChild(evidence.section);
-
-    // How it works (wash-night steps)
-    var how = accordion("how", ui.howHeading, ui.howPreview);
-    var washNight = null;
-    M.modes.forEach(function (m) { if (m.id === "wash-night") washNight = m; });
-    var ol = make("ol", "steps");
-    (washNight ? washNight.steps : []).forEach(function (step) {
-      ol.appendChild(make("li", null, step));
-    });
-    how.body.appendChild(ol);
-    wrap.appendChild(how.section);
-
-    // Parts
-    var parts = accordion("parts", ui.partsHeading, ui.partsPreview);
-    var partList = make("ul");
-    M.parts.forEach(function (part) {
-      var li = make("li", "part");
-      li.appendChild(make("h3", "part-name", part.name));
-      li.appendChild(make("p", "part-material", part.material));
-      li.appendChild(make("p", "part-job", part.job));
-      partList.appendChild(li);
-    });
-    parts.body.appendChild(partList);
-    wrap.appendChild(parts.section);
-
-    // Worries
-    var worries = accordion("worries", ui.worriesHeading, ui.worriesPreview);
-    M.worries.forEach(function (w) {
-      var item = make("div", "worry");
-      item.appendChild(make("h3", "worry-q", w.question));
-      item.appendChild(make("p", "worry-a", w.answer));
-      worries.body.appendChild(item);
-    });
-    wrap.appendChild(worries.section);
-
-    // Price
-    var price = section("price", ui.priceHeading);
-    price.appendChild(make("p", "price-amount", priceText));
-    price.appendChild(make("p", "price-note", ui.priceNote));
-    var priceActions = make("p", "actions");
-    priceActions.appendChild(link("#/preorder", "btn", ui.heroCta));
-    price.appendChild(priceActions);
-    wrap.appendChild(price);
-
-    // Sticky Preorder bar at the bottom of the screen, always visible while scrolling.
-    var bar = make("div", "cta-bar");
-    bar.setAttribute("role", "region");
-    bar.setAttribute("aria-label", ui.ctaBarLabel);
-    bar.appendChild(make("p", "cta-bar-price", priceText));
-    bar.appendChild(link("#/preorder", "btn", ui.heroCta));
-    wrap.appendChild(bar);
+    wrap.appendChild(actions);
 
     el.appendChild(wrap);
   }

@@ -24,6 +24,25 @@ window.RootClip = window.RootClip || {};
     app.appendChild(ul);
   }
 
+  // The sticky Preorder bar at the bottom of the screen: price and button.
+  // The router shows it on every route except #/preorder and #/thanks.
+  function renderCtaBar() {
+    var bar = document.getElementById("cta-bar");
+    if (!bar) return;
+    var ui = window.MOCK.copy.ui;
+    bar.setAttribute("role", "region");
+    bar.setAttribute("aria-label", ui.ctaBarLabel);
+    var price = document.createElement("p");
+    price.className = "cta-bar-price";
+    price.textContent = "$" + RootClip.price();
+    var btn = document.createElement("a");
+    btn.className = "btn";
+    btn.setAttribute("href", "#/preorder");
+    btn.textContent = ui.heroCta;
+    bar.appendChild(price);
+    bar.appendChild(btn);
+  }
+
   function boot() {
     var errors = RootClip.validateData(window.MOCK);
     if (errors.length) {
@@ -32,6 +51,7 @@ window.RootClip = window.RootClip || {};
     }
     var banner = document.getElementById("banner");
     if (banner) banner.textContent = window.MOCK.copy.banner;
+    renderCtaBar();
     RootClip.startRouter();
   }
 

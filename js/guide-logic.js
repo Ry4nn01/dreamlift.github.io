@@ -140,8 +140,8 @@ window.RootClip = window.RootClip || {};
         }
         lists[k] = v;
       });
-      if (lists.textures && !sameMembers(lists.textures, ["straight", "wavy", "curly"])) {
-        err("MOCK.guide.textures must be straight, wavy, curly.");
+      if (lists.textures && !sameMembers(lists.textures, ["straight", "wavy", "curly", "coily"])) {
+        err("MOCK.guide.textures must be straight, wavy, curly, coily.");
       }
       if (lists.thicknesses && !sameMembers(lists.thicknesses, ["fine", "medium", "thick"])) {
         err("MOCK.guide.thicknesses must be fine, medium, thick.");
